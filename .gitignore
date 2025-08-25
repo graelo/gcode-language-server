@@ -1,0 +1,9 @@
+target/
+*.bak
+*.tmp
+.DS_Store
+.vscode/
+.idea/
+
+memory.json
+.continue/
