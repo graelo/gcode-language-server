@@ -1,0 +1,21 @@
+[flavor]
+name = "prusa"
+version = "0.1"
+
+[[commands]]
+name = "M250"
+pattern = "^M250( .*)?$"
+description_short = "Prusa Buddy example command M250"
+description_long = "M250 is a Buddy-specific diagnostic command used to ... (long description placeholder)"
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Example parameter S"
+
+[[commands]]
+name = "G28"
+pattern = "^G28( .*)?$"
+description_short = "Home axes"
+description_long = "G28 homes the printer axes. On Prusa firmware, G28 has optional parameters to home specific axes."
