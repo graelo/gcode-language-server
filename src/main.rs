@@ -148,18 +148,6 @@ fn load_sample_flavor() -> Result<HashMap<String, CommandDef>> {
     Ok(map)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sample_flavor_contains_common_commands() {
-        let map = load_sample_flavor().expect("load flavor");
-        assert!(map.contains_key("G0"));
-        assert!(map.contains_key("G1"));
-    }
-}
-
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     env_logger::init();
@@ -196,4 +184,16 @@ async fn main() -> Result<()> {
     Server::new(stdin, stdout, socket).serve(service).await;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sample_flavor_contains_common_commands() {
+        let map = load_sample_flavor().expect("load flavor");
+        assert!(map.contains_key("G0"));
+        assert!(map.contains_key("G1"));
+    }
 }
