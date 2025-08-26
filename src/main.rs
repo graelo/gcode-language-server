@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
-use serde::Deserialize;
 use std::thread;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -10,33 +9,22 @@ use tower_lsp::jsonrpc::Result as LspResult;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-struct Flavor {
-    flavor: FlavorMeta,
-    commands: Option<Vec<CommandDef>>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-struct FlavorMeta {
-    name: String,
-    version: Option<String>,
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Debug, Deserialize)]
-struct CommandDef {
-    name: String,
-    pattern: Option<String>,
-    description_short: Option<String>,
-    description_long: Option<String>,
-}
+use gcode_language_server::config::Config;
+use gcode_language_server::flavor::{CommandDef, FlavorManager};
 
 struct Backend {
     client: Client,
-    commands: Arc<HashMap<String, CommandDef>>,
-    documents: Arc<Mutex<HashMap<Url, String>>>,
+    flavor_manager: Arc<Mutex<FlavorManager>>,
+    documents: Arc<Mutex<HashMap<Url, DocumentState>>>,
+}
+
+/// State for each open document
+#[derive(Debug)]
+struct DocumentState {
+    content: String,
+    #[allow(dead_code)]
+    flavor_name: Option<String>, // Detected from modeline or default
+    commands: HashMap<String, CommandDef>, // Cached command lookup
 }
 
 #[tower_lsp::async_trait]
@@ -61,13 +49,13 @@ impl LanguageServer for Backend {
         let pos = tdpp.position;
 
         let docs = self.documents.lock().await;
-        let text = match docs.get(&uri) {
-            Some(t) => t,
+        let doc_state = match docs.get(&uri) {
+            Some(state) => state,
             None => return Ok(None),
         };
 
         let line_idx = pos.line as usize;
-        let line = text.lines().nth(line_idx).unwrap_or("");
+        let line = doc_state.content.lines().nth(line_idx).unwrap_or("");
         let char_idx = pos.character as usize;
 
         // Find token under cursor (alphanumeric)
@@ -97,7 +85,7 @@ impl LanguageServer for Backend {
         let token: String = line.chars().skip(start).take(end - start).collect();
         let token_up = token.to_uppercase();
 
-        if let Some(cmd) = self.commands.get(&token_up) {
+        if let Some(cmd) = doc_state.commands.get(&token_up) {
             let desc = cmd
                 .description_short
                 .clone()
@@ -122,51 +110,73 @@ impl LanguageServer for Backend {
     // store opened documents for hover/diagnostics
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri;
-        let text = params.text_document.text;
+        let content = params.text_document.text;
+
+        // Create document state with flavor detection
+        let doc_state = self.create_document_state(content).await;
+
         let mut docs = self.documents.lock().await;
-        docs.insert(uri, text);
+        docs.insert(uri, doc_state);
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         if let Some(change) = params.content_changes.into_iter().last() {
+            // Create new document state with updated content
+            let doc_state = self.create_document_state(change.text).await;
+
             let mut docs = self.documents.lock().await;
-            docs.insert(uri, change.text);
+            docs.insert(uri, doc_state);
         }
     }
 }
 
-fn load_sample_flavor() -> Result<HashMap<String, CommandDef>> {
-    let sample = include_str!("../docs/work/samples/prusa.gcode-flavor.toml");
-    let flavor: Flavor = toml::from_str(sample)?;
-    let mut map = HashMap::new();
-    if let Some(cmds) = flavor.commands {
-        for c in cmds {
-            map.insert(c.name.to_uppercase(), c);
+impl Backend {
+    /// Create a new document state, detecting flavor and caching commands
+    async fn create_document_state(&self, content: String) -> DocumentState {
+        let flavor_manager = self.flavor_manager.lock().await;
+
+        // Try to detect flavor from modeline (highest priority)
+        let modeline_flavor = flavor_manager.detect_modeline_flavor(&content);
+
+        // Get the appropriate flavor
+        let loaded_flavor = if let Some(ref name) = modeline_flavor {
+            flavor_manager.get_flavor(name).await
+        } else {
+            // Use effective default (considers CLI/project config)
+            flavor_manager.get_effective_default_flavor().await
+        };
+
+        // Create command lookup map
+        let commands = if let Some(loaded_flavor) = loaded_flavor {
+            flavor_manager.flavor_to_command_map(&loaded_flavor.flavor)
+        } else {
+            HashMap::new()
+        };
+
+        DocumentState {
+            content,
+            #[allow(dead_code)]
+            flavor_name: modeline_flavor,
+            commands,
         }
     }
-    Ok(map)
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     env_logger::init();
-    // simple CLI flag for quick smoke checks
-    let mut args = std::env::args();
-    // skip executable name
-    args.next();
-    if let Some(first) = args.next() {
-        if first == "--version" {
-            println!("{}", env!("CARGO_PKG_VERSION"));
-            return Ok(());
-        }
-    }
 
-    let commands = load_sample_flavor()?;
-    let commands = Arc::new(commands);
+    // Parse configuration from command line and environment
+    let config = Config::from_args_and_env()?;
+
+    // Create and initialize flavor manager
+    let flavor_manager = FlavorManager::new(&config)?;
+
     let documents = Arc::new(Mutex::new(HashMap::new()));
 
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
+
     // If running under the integration test, exit after a short delay so the test can read stdout to EOF.
     if std::env::var("GCODE_LS_TEST_EXIT").as_deref() == Ok("1") {
         thread::spawn(|| {
@@ -175,12 +185,32 @@ async fn main() -> Result<()> {
         });
     }
 
-    let (service, socket) = LspService::build(|client| Backend {
-        client,
-        commands: commands.clone(),
-        documents: documents.clone(),
+    let (service, socket) = LspService::build(|client| {
+        let flavor_manager_arc = Arc::new(Mutex::new(flavor_manager));
+
+        // Initialize the flavor manager with the client in a background task
+        let flavor_manager_clone = flavor_manager_arc.clone();
+        let client_clone = client.clone();
+        tokio::spawn(async move {
+            let mut fm = flavor_manager_clone.lock().await;
+            if let Err(e) = fm.initialize(Some(client_clone.clone())).await {
+                client_clone
+                    .log_message(
+                        MessageType::ERROR,
+                        format!("Failed to initialize flavor manager: {}", e),
+                    )
+                    .await;
+            }
+        });
+
+        Backend {
+            client,
+            flavor_manager: flavor_manager_arc,
+            documents: documents.clone(),
+        }
     })
     .finish();
+
     Server::new(stdin, stdout, socket).serve(service).await;
 
     Ok(())
@@ -190,10 +220,21 @@ async fn main() -> Result<()> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn sample_flavor_contains_common_commands() {
-        let map = load_sample_flavor().expect("load flavor");
-        assert!(map.contains_key("G0"));
-        assert!(map.contains_key("G1"));
+    #[tokio::test]
+    async fn flavor_manager_loads_builtin_flavors() {
+        let mut flavor_manager =
+            FlavorManager::with_default_config().expect("create flavor manager");
+        flavor_manager
+            .initialize(None)
+            .await
+            .expect("initialize flavor manager");
+
+        let prusa_flavor = flavor_manager.get_flavor("prusa").await;
+        assert!(prusa_flavor.is_some());
+
+        let flavor = prusa_flavor.unwrap();
+        let commands = flavor_manager.flavor_to_command_map(&flavor.flavor);
+        assert!(commands.contains_key("G0"));
+        assert!(commands.contains_key("G1"));
     }
 }

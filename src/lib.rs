@@ -1,4 +1,6 @@
 //! gcode-language-server library exports
+pub mod config;
+pub mod flavor;
 pub mod gcode;
 
 #[cfg(test)]

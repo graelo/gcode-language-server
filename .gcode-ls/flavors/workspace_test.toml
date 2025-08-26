@@ -1,0 +1,14 @@
+[flavor]
+name = "workspace_test"
+version = "1.0"
+description = "Test workspace flavor"
+
+[[commands]]
+name = "G99"
+description_short = "Custom workspace command"
+description_long = "This is a custom command only available in workspace"
+
+[[commands]]
+name = "G0"
+description_short = "Workspace rapid move"
+description_long = "Overridden rapid move with workspace-specific behavior"

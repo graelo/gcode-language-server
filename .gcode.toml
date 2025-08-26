@@ -1,0 +1,6 @@
+[project]
+default_flavor = "prusa"
+
+[project.settings]
+enable_diagnostics = true
+completion_style = "detailed"

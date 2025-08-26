@@ -41,7 +41,7 @@ fn bench_tokenize_text(c: &mut Criterion) {
             |b, content| {
                 b.iter(|| {
                     let tokens = tokenize_text(content);
-                    criterion::black_box(tokens.len())
+                    std::hint::black_box(tokens.len())
                 })
             },
         );
@@ -63,7 +63,7 @@ fn bench_streaming_iterator(c: &mut Criterion) {
                     let cursor = Cursor::new(content.as_bytes());
                     let iterator = TokenIterator::new(cursor);
                     let count = iterator.count();
-                    criterion::black_box(count)
+                    std::hint::black_box(count)
                 })
             },
         );
@@ -80,7 +80,7 @@ fn bench_token_at_lookup(c: &mut Criterion) {
             // Test lookups at various positions
             for &pos in [1000, 50000, 100000, 500000].iter() {
                 let token = token_at_position(&tokens, pos);
-                criterion::black_box(token);
+                std::hint::black_box(token);
             }
         })
     });
