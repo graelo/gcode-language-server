@@ -138,9 +138,13 @@ The user indicated they expect edits to files up to ~20 MB.
 - Project name: `gcode-language-server` (confirmed by user)
 
 
-## Open questions (see docs/issues/0001-prd-questions.md)
+## Open questions (see docs/issues/done/0001-prd-questions.md)
 
 See linked questions file for clarifying items required before architecture and implementation.
+
+## Convention for issues
+
+See docs/issues/0000-issue-convention.md for naming, tracking, and workflow.
 
 ## Next steps
 

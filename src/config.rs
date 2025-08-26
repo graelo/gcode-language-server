@@ -5,10 +5,10 @@
 //! - Project configuration file (.gcode.toml) loading
 //! - Hierarchical configuration search
 
-use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use clap::Parser;
 use serde::Deserialize;
+use std::path::{Path, PathBuf};
 
 /// Command-line arguments for the G-code language server
 #[derive(Debug, Parser)]
@@ -24,8 +24,19 @@ pub struct Args {
     #[arg(long, help = "Directory containing flavor TOML files")]
     pub flavor_dir: Option<PathBuf>,
 
+    /// Show long descriptions instead of short ones in hover
+    #[arg(
+        long,
+        help = "Show long descriptions in hover (default: short descriptions)"
+    )]
+    pub long_descriptions: bool,
+
     /// Log level for the language server
-    #[arg(long, default_value = "info", help = "Log level (trace, debug, info, warn, error)")]
+    #[arg(
+        long,
+        default_value = "info",
+        help = "Log level (trace, debug, info, warn, error)"
+    )]
     pub log_level: String,
 }
 
@@ -60,6 +71,8 @@ pub struct Config {
     pub flavor_dirs: Vec<PathBuf>,
     /// Project configuration file path (if found)
     pub project_config_path: Option<PathBuf>,
+    /// Whether to show long descriptions in hover (default: false for short)
+    pub long_descriptions: bool,
     /// Log level
     pub log_level: String,
 }
@@ -68,7 +81,7 @@ impl Config {
     /// Create configuration from command-line arguments and project config search
     pub fn from_args_and_env() -> Result<Self> {
         let args = Args::parse();
-        
+
         // Search for project configuration
         let (project_config, project_config_path) = Self::search_project_config()?;
         let project_flavor = project_config
@@ -77,17 +90,17 @@ impl Config {
 
         // Determine flavor directories
         let mut flavor_dirs = Vec::new();
-        
+
         // Add user-specified directory if provided
         if let Some(custom_dir) = args.flavor_dir {
             flavor_dirs.push(custom_dir);
         }
-        
+
         // Add default directories
         if let Some(config_dir) = dirs::config_dir() {
             flavor_dirs.push(config_dir.join("gcode-ls").join("flavors"));
         }
-        
+
         // Add workspace directory
         let workspace_dir = std::env::current_dir()?.join(".gcode-ls").join("flavors");
         flavor_dirs.push(workspace_dir);
@@ -97,6 +110,7 @@ impl Config {
             project_flavor,
             flavor_dirs,
             project_config_path,
+            long_descriptions: args.long_descriptions,
             log_level: args.log_level,
         })
     }
@@ -104,19 +118,21 @@ impl Config {
     /// Search for .gcode.toml starting from current directory going up
     fn search_project_config() -> Result<(Option<ProjectConfig>, Option<PathBuf>)> {
         let mut current = std::env::current_dir()?;
-        
+
         loop {
             let config_path = current.join(".gcode.toml");
             if config_path.exists() {
-                let content = std::fs::read_to_string(&config_path)
-                    .with_context(|| format!("Failed to read project config: {}", config_path.display()))?;
-                
-                let config: ProjectConfig = toml::from_str(&content)
-                    .with_context(|| format!("Failed to parse project config: {}", config_path.display()))?;
-                
+                let content = std::fs::read_to_string(&config_path).with_context(|| {
+                    format!("Failed to read project config: {}", config_path.display())
+                })?;
+
+                let config: ProjectConfig = toml::from_str(&content).with_context(|| {
+                    format!("Failed to parse project config: {}", config_path.display())
+                })?;
+
                 return Ok((Some(config), Some(config_path)));
             }
-            
+
             // Move to parent directory
             if let Some(parent) = current.parent() {
                 current = parent.to_path_buf();
@@ -125,7 +141,7 @@ impl Config {
                 break;
             }
         }
-        
+
         Ok((None, None))
     }
 
@@ -162,11 +178,23 @@ default_flavor = "marlin"
 enable_diagnostics = true
 completion_style = "detailed"
 "#;
-        
+
         let config: ProjectConfig = toml::from_str(config_content).unwrap();
         assert_eq!(config.project.default_flavor.as_deref(), Some("marlin"));
-        assert_eq!(config.project.settings.as_ref().unwrap().enable_diagnostics, Some(true));
-        assert_eq!(config.project.settings.as_ref().unwrap().completion_style.as_deref(), Some("detailed"));
+        assert_eq!(
+            config.project.settings.as_ref().unwrap().enable_diagnostics,
+            Some(true)
+        );
+        assert_eq!(
+            config
+                .project
+                .settings
+                .as_ref()
+                .unwrap()
+                .completion_style
+                .as_deref(),
+            Some("detailed")
+        );
     }
 
     #[tokio::test]
@@ -174,29 +202,39 @@ completion_style = "detailed"
         let temp_dir = TempDir::new().unwrap();
         let project_root = temp_dir.path().join("project");
         let subdir = project_root.join("subdir").join("deep");
-        
+
         fs::create_dir_all(&subdir).unwrap();
-        
+
         // Create config in project root
         let config_path = project_root.join(".gcode.toml");
-        fs::write(&config_path, r#"
+        fs::write(
+            &config_path,
+            r#"
 [project]
 default_flavor = "test_flavor"
-"#).unwrap();
-        
+"#,
+        )
+        .unwrap();
+
         // Change to subdirectory
         let original_dir = std::env::current_dir().unwrap();
         std::env::set_current_dir(&subdir).unwrap();
-        
+
         // Search should find the config
         let (config, path) = Config::search_project_config().unwrap();
-        
+
         // Restore original directory
         std::env::set_current_dir(original_dir).unwrap();
-        
+
         assert!(config.is_some());
-        assert_eq!(config.unwrap().project.default_flavor.as_deref(), Some("test_flavor"));
+        assert_eq!(
+            config.unwrap().project.default_flavor.as_deref(),
+            Some("test_flavor")
+        );
         // Use canonicalize to handle symlinks in temp directories on macOS
-        assert_eq!(path.unwrap().canonicalize().unwrap(), config_path.canonicalize().unwrap());
+        assert_eq!(
+            path.unwrap().canonicalize().unwrap(),
+            config_path.canonicalize().unwrap()
+        );
     }
 }

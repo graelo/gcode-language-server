@@ -6,7 +6,7 @@ async fn test_modeline_at_bottom_of_file() {
     let manager = FlavorManager::with_default_config().expect("create manager");
 
     // Test file with modeline at the bottom
-    let content = std::fs::read_to_string("examples/sample_bottom_modeline.gcode")
+    let content = std::fs::read_to_string("tests/fixtures/sample_bottom_modeline.gcode")
         .expect("read sample file with bottom modeline");
 
     let detected = manager.detect_modeline_flavor(&content);

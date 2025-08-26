@@ -6,14 +6,14 @@ async fn test_modeline_with_sample_files() {
     let manager = FlavorManager::with_default_config().expect("create manager");
 
     // Test Prusa modeline detection
-    let prusa_content =
-        std::fs::read_to_string("examples/sample_prusa.gcode").expect("read prusa sample file");
+    let prusa_content = std::fs::read_to_string("tests/fixtures/sample_prusa.gcode")
+        .expect("read prusa sample file");
 
     let detected = manager.detect_modeline_flavor(&prusa_content);
     assert_eq!(detected, Some("prusa".to_string()));
 
     // Test workspace modeline detection
-    let workspace_content = std::fs::read_to_string("examples/sample_workspace.gcode")
+    let workspace_content = std::fs::read_to_string("tests/fixtures/sample_workspace.gcode")
         .expect("read workspace sample file");
 
     let detected = manager.detect_modeline_flavor(&workspace_content);
@@ -25,8 +25,8 @@ async fn test_end_to_end_document_state() {
     let mut flavor_manager = FlavorManager::with_default_config().expect("create manager");
     flavor_manager.initialize(None).await.expect("initialize");
 
-    let prusa_content =
-        std::fs::read_to_string("examples/sample_prusa.gcode").expect("read prusa sample file");
+    let prusa_content = std::fs::read_to_string("tests/fixtures/sample_prusa.gcode")
+        .expect("read prusa sample file");
 
     // Simulate what happens when a document is opened
     let flavor_name = flavor_manager.detect_modeline_flavor(&prusa_content);
