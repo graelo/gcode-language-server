@@ -1,0 +1,251 @@
+[flavor]
+name = "prusa"
+version = "1.0"
+description = "Comprehensive Prusa G-code flavor with common 3D printing commands"
+
+[[commands]]
+name = "G0"
+description_short = "Rapid positioning"
+description_long = "Move to position at rapid rate without extrusion. Used for non-printing moves."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X coordinate"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y coordinate"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z coordinate"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Feed rate (movement speed)"
+
+[[commands]]
+name = "G1"
+description_short = "Linear move"
+description_long = "Linear move with optional extrusion. The workhorse command for 3D printing."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X coordinate"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y coordinate"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z coordinate"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder coordinate (filament position)"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Feed rate (movement speed)"
+
+[[commands]]
+name = "G28"
+description_short = "Home axes"
+description_long = "G28 homes the printer axes. On Prusa firmware, G28 can home all axes or specific ones. Without parameters, homes all axes."
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Home X axis (any value homes X, omit to skip)"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Home Y axis (any value homes Y, omit to skip)"
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false
+description = "Home Z axis (any value homes Z, omit to skip)"
+
+[[commands]]
+name = "G90"
+description_short = "Absolute positioning"
+description_long = "Set positioning to absolute coordinates. All subsequent coordinates are interpreted as absolute positions."
+
+[[commands]]
+name = "G91"
+description_short = "Relative positioning"
+description_long = "Set positioning to relative coordinates. All subsequent coordinates are interpreted as relative to current position."
+
+[[commands]]
+name = "G92"
+description_short = "Set position"
+description_long = "Set current position to given coordinates without actually moving. Useful for zeroing axes or extruder."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X coordinate to set"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y coordinate to set"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z coordinate to set"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder coordinate to set"
+
+[[commands]]
+name = "M104"
+description_short = "Set extruder temperature"
+description_long = "Set extruder temperature and continue without waiting. Non-blocking temperature setting."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Target temperature in Celsius"
+
+[[commands.parameters]]
+name = "T"
+type = "int"
+required = false
+description = "Tool number (default: current tool)"
+
+[[commands]]
+name = "M109"
+description_short = "Set extruder temperature and wait"
+description_long = "Set extruder temperature and wait for it to reach target. Blocks until temperature is reached."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Target temperature in Celsius"
+
+[[commands.parameters]]
+name = "T"
+type = "int"
+required = false
+description = "Tool number (default: current tool)"
+
+[[commands]]
+name = "M140"
+description_short = "Set bed temperature"
+description_long = "Set heated bed temperature without waiting. Non-blocking bed temperature setting."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Target bed temperature in Celsius"
+
+[[commands]]
+name = "M190"
+description_short = "Set bed temperature and wait"
+description_long = "Set heated bed temperature and wait for it to reach target. Blocks until bed temperature is reached."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Target bed temperature in Celsius"
+
+[[commands]]
+name = "M106"
+description_short = "Set fan speed"
+description_long = "Set part cooling fan speed. Controls the print cooling fan, not the hotend fan."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Fan speed: 0-255 (0 = off, 255 = full speed)"
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Fan index (default: 0)"
+
+[[commands]]
+name = "M107"
+description_short = "Turn off fan"
+description_long = "Turn off the part cooling fan. Equivalent to M106 S0."
+
+[[commands]]
+name = "M82"
+description_short = "Absolute extruder mode"
+description_long = "Set extruder to absolute mode. E coordinates are interpreted as absolute positions."
+
+[[commands]]
+name = "M83"
+description_short = "Relative extruder mode"
+description_long = "Set extruder to relative mode. E coordinates are interpreted as relative to current extruder position."
+
+[[commands]]
+name = "G29"
+description_short = "Bed leveling"
+description_long = "Auto bed leveling. Probes the bed at multiple points to create a mesh for automatic bed leveling compensation."
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Probing phase (Prusa specific)"
+
+[[commands]]
+name = "M84"
+description_short = "Disable steppers"
+description_long = "Disable stepper motors after specified timeout or immediately. Reduces motor heat and power consumption."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Timeout in seconds before disabling motors"
+
+[[commands]]
+name = "M117"
+description_short = "Display message"
+description_long = "Display a message on the LCD screen. Useful for status updates during printing."
+
+[[commands.parameters]]
+name = "message"
+type = "string"
+required = true
+description = "Message text to display"

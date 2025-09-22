@@ -4,7 +4,7 @@ Status: Current (Updated Aug 2025)
 
 ## High-level overview
 
-The `gcode-language-server` is a Rust process that implements the Language Server Protocol (LSP) over JSON-RPC on stdio. Editors (Neovim, VS Code, etc.) spawn the `gcodels` binary and communicate using the standard LSP messages. The server parses G-code files, consults a flavor database (built-in + user-provided TOML files), and provides LSP features: diagnostics, hover, completions, document symbols, and semantic tokens.
+The `gcode-language-server` is a Rust process that implements the Language Server Protocol (LSP) over JSON-RPC on stdio. Editors (Neovim, VS Code, etc.) spawn the `gcode-ls` binary and communicate using the standard LSP messages. The server parses G-code files, consults a flavor database (built-in + user-provided TOML files), and provides LSP features: diagnostics, hover, completions, document symbols, and semantic tokens.
 
 ## Implementation Status
 
@@ -118,10 +118,10 @@ The server implements a sophisticated priority-based flavor selection:
 ### Example Usage
 ```bash
 # Explicit flavor selection
-gcodels --flavor=marlin
+gcode-ls --flavor=marlin
 
 # Custom flavor directory
-gcodels --flavor-dir=~/.my-flavors/
+gcode-ls --flavor-dir=~/.my-flavors/
 
 # Project configuration (.gcode.toml)
 [project]
@@ -135,8 +135,8 @@ default_flavor = "prusa"
 
 ### Current Implementation
 ```bash
-# Executable name: gcodels (like luals for lua-language-server)
-gcodels [OPTIONS]
+# Executable name: gcode-ls (like luals for lua-language-server)
+gcode-ls [OPTIONS]
 
 # Available flags:
 --flavor <FLAVOR>          # G-code flavor to use (e.g., 'prusa', 'marlin')  

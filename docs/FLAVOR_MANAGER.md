@@ -22,7 +22,7 @@ The language server supports multiple ways to select the active flavor, in order
 #### Command-Line Selection
 Start the language server with a specific flavor:
 ```bash
-gcodels --flavor=marlin
+gcode-ls --flavor=marlin
 ```
 
 #### Project Configuration
@@ -129,13 +129,13 @@ The flavor system integrates seamlessly with LSP features:
 ### 1. Using Command-line Flavor Selection
 ```bash
 # Start language server with specific flavor
-gcodels --flavor=marlin
+gcode-ls --flavor=marlin
 
 # Use custom flavor directory
-gcodels --flavor-dir=./my-flavors/
+gcode-ls --flavor-dir=./my-flavors/
 
 # Combine options
-gcodels --flavor=prusa --log-level=debug
+gcode-ls --flavor=prusa --log-level=debug
 ```
 
 ### 2. Using Project Configuration

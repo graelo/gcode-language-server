@@ -24,8 +24,8 @@ fn initialize_smoke() {
 }
 
 fn spawn_server() -> std::process::Child {
-    let bin_path = std::env::var("CARGO_BIN_EXE_gcode-language-server")
-        .unwrap_or_else(|_| "target/debug/gcode-language-server".to_string());
+    let bin_path = std::env::var("CARGO_BIN_EXE_gcode-ls")
+        .unwrap_or_else(|_| "target/debug/gcode-ls".to_string());
 
     Command::new(bin_path)
         .stdin(Stdio::piped())
