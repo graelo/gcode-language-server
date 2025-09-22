@@ -206,7 +206,7 @@ impl Backend {
                 if !doc_state.commands.contains_key(&command) {
                     // Create diagnostic for unknown command
                     let diagnostic =
-                        self.create_unknown_command_diagnostic(&token, &doc_state.content);
+                        self.create_unknown_command_diagnostic(token, &doc_state.content);
                     diagnostics.push(diagnostic);
                 }
             }
@@ -411,8 +411,8 @@ mod tests {
             log_level: "info".to_string(),
         };
 
-        assert_eq!(short_config.long_descriptions, false);
-        assert_eq!(long_config.long_descriptions, true);
+        assert!(!short_config.long_descriptions);
+        assert!(long_config.long_descriptions);
     }
 
     #[test]
@@ -496,64 +496,63 @@ mod tests {
             "Move to position at rapid rate without extrusion"
         );
     }
-}
 
-/// Helper function to convert byte positions to line/character positions
-/// This is extracted for testing purposes
-#[cfg(test)]
-fn byte_positions_to_line_char(
-    start_byte: usize,
-    end_byte: usize,
-    content: &str,
-) -> (u32, u32, u32, u32) {
-    let mut byte_pos = 0;
+    /// Helper function to convert byte positions to line/character positions
+    /// This is extracted for testing purposes
+    fn byte_positions_to_line_char(
+        start_byte: usize,
+        end_byte: usize,
+        content: &str,
+    ) -> (u32, u32, u32, u32) {
+        let mut byte_pos = 0;
 
-    let (start_line, start_char) = {
-        let mut line = 0;
-        let mut char_pos = 0;
+        let (start_line, start_char) = {
+            let mut line = 0;
+            let mut char_pos = 0;
 
-        for ch in content.chars() {
-            if byte_pos >= start_byte {
-                break;
+            for ch in content.chars() {
+                if byte_pos >= start_byte {
+                    break;
+                }
+
+                if ch == '\n' {
+                    line += 1;
+                    char_pos = 0;
+                } else {
+                    char_pos += 1;
+                }
+
+                byte_pos += ch.len_utf8();
             }
 
-            if ch == '\n' {
-                line += 1;
-                char_pos = 0;
-            } else {
-                char_pos += 1;
+            (line, char_pos)
+        };
+
+        // Reset for end position
+        byte_pos = 0;
+
+        let (end_line, end_char) = {
+            let mut line = 0;
+            let mut char_pos = 0;
+
+            for ch in content.chars() {
+                if byte_pos >= end_byte {
+                    break;
+                }
+
+                if ch == '\n' {
+                    line += 1;
+                    char_pos = 0;
+                } else {
+                    char_pos += 1;
+                }
+
+                byte_pos += ch.len_utf8();
             }
 
-            byte_pos += ch.len_utf8();
-        }
+            (line, char_pos)
+        };
 
-        (line, char_pos)
-    };
-
-    // Reset for end position
-    byte_pos = 0;
-
-    let (end_line, end_char) = {
-        let mut line = 0;
-        let mut char_pos = 0;
-
-        for ch in content.chars() {
-            if byte_pos >= end_byte {
-                break;
-            }
-
-            if ch == '\n' {
-                line += 1;
-                char_pos = 0;
-            } else {
-                char_pos += 1;
-            }
-
-            byte_pos += ch.len_utf8();
-        }
-
-        (line, char_pos)
-    };
-
-    (start_line, start_char, end_line, end_char)
+        (start_line, start_char, end_line, end_char)
+    }
 }

@@ -566,15 +566,14 @@ impl FlavorManager {
             check
         };
 
+        let modeline_re = regex::Regex::new(r"gcode_flavor\s*=\s*(\w+)");
+
         for line in check_lines {
             // Look for patterns like:
             // ; vim: gcode_flavor=prusa
             // ; gcode_flavor=prusa
             // // gcode_flavor=prusa
-            if let Some(captures) = regex::Regex::new(r"gcode_flavor\s*=\s*(\w+)")
-                .ok()?
-                .captures(line)
-            {
+            if let Some(captures) = modeline_re.as_ref().ok()?.captures(line) {
                 return Some(captures.get(1)?.as_str().to_string());
             }
         }
