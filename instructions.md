@@ -25,3 +25,9 @@ folder.
 Let's create the PRD, ask me any question you feel is necessary. We'll then
 craft and architecture document for the server, and start implementation, using
 different issues. You will write the issues in docs/issues/.
+
+----
+
+The PRD was created in docs/work/PRD.md.
+The architecture document was created in docs/work/ARCHITECTURE.md.
+The issues were created in docs/issues/, with the naming convention being explained in docs/work/0000-issue-convention.md.
