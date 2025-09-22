@@ -5,8 +5,11 @@
 //! - Produce tokens: Command, Param, Comment.
 //! - Provide function to find token at a byte position in the whole text.
 //! - Support streaming iteration and lightweight AST for diagnostics.
+//! - Validate parameters against command definitions from flavor files.
 
+use crate::flavor::{CommandDef, ParameterDef};
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 /// Represents a G-code token with its type, text, and byte positions
 #[derive(Debug, Clone, PartialEq)]
@@ -38,6 +41,101 @@ pub struct Command {
 pub struct Parameter {
     pub letter: char,
     pub value: f64,
+}
+
+/// Validation result for a command and its parameters
+#[derive(Debug, Clone)]
+pub struct ValidationResult {
+    pub is_valid: bool,
+    pub errors: Vec<ValidationError>,
+    pub warnings: Vec<ValidationWarning>,
+}
+
+/// Validation errors for parameters
+#[derive(Debug, Clone)]
+pub enum ValidationError {
+    UnknownCommand {
+        command: String,
+        start: usize,
+        end: usize,
+    },
+    UnknownParameter {
+        param: String,
+        command: String,
+        start: usize,
+        end: usize,
+    },
+    MissingRequiredParameter {
+        param: String,
+        command: String,
+        command_start: usize,
+        command_end: usize,
+    },
+    InvalidParameterType {
+        param: String,
+        expected: String,
+        actual: String,
+        start: usize,
+        end: usize,
+    },
+    ConstraintViolation {
+        param: String,
+        constraint: String,
+        value: String,
+        start: usize,
+        end: usize,
+    },
+}
+
+/// Validation warnings for parameters
+#[derive(Debug, Clone)]
+pub enum ValidationWarning {
+    ParameterWithoutValue {
+        param: String,
+        start: usize,
+        end: usize,
+    },
+    UnusualParameterValue {
+        param: String,
+        value: String,
+        suggestion: String,
+        start: usize,
+        end: usize,
+    },
+    MoveCommandWithoutCoordinates {
+        command: String,
+        start: usize,
+        end: usize,
+    },
+}
+
+/// Enhanced token with validation context
+#[derive(Debug, Clone)]
+pub struct ValidatedToken<'a> {
+    pub token: Token<'a>,
+    pub validation: Option<ValidationResult>,
+    pub parameter_def: Option<&'a ParameterDef>,
+}
+
+impl Default for ValidationResult {
+    fn default() -> Self {
+        Self {
+            is_valid: true,
+            errors: Vec::new(),
+            warnings: Vec::new(),
+        }
+    }
+}
+
+impl ValidationResult {
+    pub fn add_error(&mut self, error: ValidationError) {
+        self.is_valid = false;
+        self.errors.push(error);
+    }
+
+    pub fn add_warning(&mut self, warning: ValidationWarning) {
+        self.warnings.push(warning);
+    }
 }
 
 /// Simple and fast tokenize_line function using character iteration
@@ -280,6 +378,217 @@ fn parse_parameter_simple(text: &str) -> Option<Parameter> {
     let value = value_str.parse::<f64>().ok()?;
 
     Some(Parameter { letter, value })
+}
+
+/// Validate a line of G-code against command definitions
+pub fn validate_line<'a>(
+    line: &'a str,
+    offset: usize,
+    command_definitions: &'a HashMap<String, CommandDef>,
+) -> Vec<ValidatedToken<'a>> {
+    let tokens = tokenize_line(line, offset);
+    let mut validated_tokens = Vec::new();
+
+    // Find the command token and definition
+    let command_info = tokens
+        .iter()
+        .find(|t| t.kind == TokenKind::Command)
+        .map(|cmd_token| {
+            let cmd_def = command_definitions.get(&cmd_token.text.to_uppercase());
+            (
+                cmd_token.text.to_string(),
+                cmd_token.start,
+                cmd_token.end,
+                cmd_def,
+            )
+        });
+
+    // Collect all parameter tokens with their values
+    let param_tokens: Vec<_> = tokens
+        .iter()
+        .filter(|t| t.kind == TokenKind::Param)
+        .collect();
+
+    // Parse parameters into (name, value) pairs
+    let mut parsed_params = Vec::new();
+    for param_token in &param_tokens {
+        if let Some((letter, value_str)) = parse_parameter(&param_token.text) {
+            parsed_params.push((letter.to_string(), value_str.to_string()));
+        }
+    }
+
+    // Validate each token
+    for token in tokens.into_iter() {
+        let mut validation = ValidationResult::default();
+        let mut parameter_def = None;
+
+        match token.kind {
+            TokenKind::Command => {
+                if let Some((_, _, _, cmd_def_opt)) = &command_info {
+                    if cmd_def_opt.is_none() {
+                        validation.add_error(ValidationError::UnknownCommand {
+                            command: token.text.to_string(),
+                            start: token.start,
+                            end: token.end,
+                        });
+                    }
+                }
+            }
+            TokenKind::Param => {
+                if let Some((cmd_name, _, _, Some(cmd_def))) = &command_info {
+                    if let Some((letter, value_str)) = parse_parameter(&token.text) {
+                        match cmd_def.find_parameter(&letter.to_string()) {
+                            Some(param_def) => {
+                                parameter_def = Some(param_def);
+                                if let Err(validation_error) = param_def.validate_value(&value_str)
+                                {
+                                    validation.add_error(ValidationError::ConstraintViolation {
+                                        param: letter.to_string(),
+                                        constraint: validation_error.clone(),
+                                        value: value_str.clone(),
+                                        start: token.start,
+                                        end: token.end,
+                                    });
+                                }
+                            }
+                            None => {
+                                validation.add_error(ValidationError::UnknownParameter {
+                                    param: letter.to_string(),
+                                    command: cmd_name.clone(),
+                                    start: token.start,
+                                    end: token.end,
+                                });
+                            }
+                        }
+                    }
+                } else if let Some((cmd_name, _, _, None)) = &command_info {
+                    // We have a command but no definition for it
+                    if let Some((letter, _)) = parse_parameter(&token.text) {
+                        validation.add_error(ValidationError::UnknownParameter {
+                            param: letter.to_string(),
+                            command: cmd_name.clone(),
+                            start: token.start,
+                            end: token.end,
+                        });
+                    }
+                }
+            }
+            TokenKind::Comment => {
+                // Comments don't need validation
+            }
+        }
+
+        validated_tokens.push(ValidatedToken {
+            token,
+            validation: if validation.errors.is_empty() && validation.warnings.is_empty() {
+                None
+            } else {
+                Some(validation)
+            },
+            parameter_def,
+        });
+    }
+
+    // Check for missing required parameters
+    if let Some((cmd_name, cmd_start, cmd_end, Some(cmd_def))) = &command_info {
+        let provided_param_names: std::collections::HashSet<String> = parsed_params
+            .iter()
+            .map(|(name, _)| name.to_lowercase())
+            .collect();
+
+        for required_param in cmd_def.required_parameters() {
+            let param_name_lower = required_param.name.to_lowercase();
+            let alias_match = required_param
+                .aliases
+                .as_ref()
+                .map(|aliases| {
+                    aliases
+                        .iter()
+                        .any(|alias| provided_param_names.contains(&alias.to_lowercase()))
+                })
+                .unwrap_or(false);
+
+            if !provided_param_names.contains(&param_name_lower) && !alias_match {
+                // Add missing parameter error to the command token
+                if let Some(cmd_validated_token) = validated_tokens
+                    .iter_mut()
+                    .find(|vt| vt.token.kind == TokenKind::Command)
+                {
+                    if cmd_validated_token.validation.is_none() {
+                        cmd_validated_token.validation = Some(ValidationResult::default());
+                    }
+                    if let Some(ref mut validation) = cmd_validated_token.validation {
+                        validation.add_error(ValidationError::MissingRequiredParameter {
+                            param: required_param.name.clone(),
+                            command: cmd_name.clone(),
+                            command_start: *cmd_start,
+                            command_end: *cmd_end,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Check for move commands without coordinate parameters
+        if matches!(cmd_name.as_str(), "G0" | "G1") {
+            let coordinate_params = ["x", "y", "z", "e"];
+            let has_coordinate = provided_param_names
+                .iter()
+                .any(|param| coordinate_params.contains(&param.as_str()));
+
+            if !has_coordinate {
+                // Add warning to the command token
+                if let Some(cmd_validated_token) = validated_tokens
+                    .iter_mut()
+                    .find(|vt| vt.token.kind == TokenKind::Command)
+                {
+                    if cmd_validated_token.validation.is_none() {
+                        cmd_validated_token.validation = Some(ValidationResult::default());
+                    }
+                    if let Some(ref mut validation) = cmd_validated_token.validation {
+                        validation.add_warning(ValidationWarning::MoveCommandWithoutCoordinates {
+                            command: cmd_name.clone(),
+                            start: *cmd_start,
+                            end: *cmd_end,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    validated_tokens
+}
+
+/// Parse a parameter token like "X10.5" into letter and value
+fn parse_parameter(param_text: &str) -> Option<(char, String)> {
+    let mut chars = param_text.chars();
+    let letter = chars.next()?;
+    let value_str = chars.collect::<String>();
+
+    if value_str.is_empty() {
+        // Parameter with no value (like in G28 X)
+        Some((letter, "1".to_string())) // Default to 1 for boolean-like parameters
+    } else {
+        Some((letter, value_str))
+    }
+}
+
+/// Validate an entire text against command definitions
+pub fn validate_text<'a>(
+    text: &'a str,
+    command_definitions: &'a HashMap<String, CommandDef>,
+) -> Vec<ValidatedToken<'a>> {
+    let mut all_validated_tokens = Vec::new();
+    let mut current_offset = 0;
+
+    for line in text.lines() {
+        let line_validated_tokens = validate_line(line, current_offset, command_definitions);
+        all_validated_tokens.extend(line_validated_tokens);
+        current_offset += line.len() + 1; // +1 for the newline character
+    }
+
+    all_validated_tokens
 }
 
 #[cfg(test)]

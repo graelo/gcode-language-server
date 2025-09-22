@@ -6,40 +6,184 @@ version = "0.1"
 name = "M250"
 pattern = "^M250( .*)?$"
 description_short = "Prusa Buddy example command M250"
-description_long = "M250 is a Buddy-specific diagnostic command used to ... (long description placeholder)"
+description_long = "M250 is a Buddy-specific diagnostic command used for diagnostics and testing."
 
 [[commands.parameters]]
 name = "S"
 type = "int"
 required = false
-description = "Example parameter S"
+description = "Status code or diagnostic parameter"
+
+[commands.parameters.constraints]
+min_value = 0.0
+max_value = 255.0
 
 [[commands]]
 name = "G28"
 pattern = "^G28( .*)?$"
 description_short = "Home axes"
-description_long = "G28 homes the printer axes. On Prusa firmware, G28 has optional parameters to home specific axes."
+description_long = "G28 homes the printer axes. On Prusa firmware, G28 can home all axes or specific ones."
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Home X axis (any value homes X, omit to skip)"
+default_value = "false"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Home Y axis (any value homes Y, omit to skip)"
+default_value = "false"
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false 
+description = "Home Z axis (any value homes Z, omit to skip)"
+default_value = "false"
+
+[[commands.parameters]]
+name = "W"
+type = "bool"
+required = false
+description = "Home W axis if available (any value homes W, omit to skip)"
+default_value = "false"
 
 [[commands]]
 name = "G0"
 pattern = "^G0( .*)?$"
 description_short = "Rapid linear move"
-description_long = "G0 performs a rapid, non-extruding linear move to the specified coordinates. Parameters: X, Y, Z, F (feedrate)."
+description_long = "G0 performs a rapid, non-extruding linear move to the specified coordinates."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X-axis destination coordinate"
+
+[commands.parameters.constraints]
+min_value = -999.0
+max_value = 999.0
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y-axis destination coordinate"
+
+[commands.parameters.constraints]
+min_value = -999.0
+max_value = 999.0
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z-axis destination coordinate"
+
+[commands.parameters.constraints]
+min_value = 0.0
+max_value = 300.0
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Feedrate (movement speed in mm/min)"
+
+[commands.parameters.constraints]
+min_value = 1.0
+max_value = 10000.0
 
 [[commands]]
 name = "G1"
 pattern = "^G1( .*)?$"
 description_short = "Controlled linear move"
-description_long = "G1 moves the toolhead linearly while feeding filament (if applicable). Parameters: X, Y, Z, E, F."
+description_long = "G1 moves the toolhead linearly while feeding filament if E parameter is specified."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X-axis destination coordinate"
+
+[commands.parameters.constraints]
+min_value = -999.0
+max_value = 999.0
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y-axis destination coordinate"
+
+[commands.parameters.constraints]
+min_value = -999.0
+max_value = 999.0
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z-axis destination coordinate"
+
+[commands.parameters.constraints]
+min_value = 0.0
+max_value = 300.0
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder position or amount to extrude"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Feedrate (movement speed in mm/min)"
+
+[commands.parameters.constraints]
+min_value = 1.0
+max_value = 10000.0
 
 [[commands]]
 name = "G91"
 pattern = "^G91( .*)?$"
 description_short = "Set to relative positioning"
-description_long = "G91 switches the coordinate system to relative positioning. Subsequent moves are interpreted as offsets."
+description_long = "G91 switches the coordinate system to relative positioning. Subsequent moves are interpreted as offsets from current position."
+
+# G91 typically has no parameters
 
 [[commands]]
 name = "G92"
 pattern = "^G92( .*)?$"
 description_short = "Set current position"
-description_long = "G92 sets the current position to the given coordinates without moving the machine. Parameters: X, Y, Z, E."
+description_long = "G92 sets the current position to the given coordinates without moving the machine. Used for coordinate system offset."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "Set current X position to this value"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Set current Y position to this value"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Set current Z position to this value"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Set current extruder position to this value"

@@ -46,14 +46,201 @@ pub struct CommandDef {
     pub parameters: Option<Vec<ParameterDef>>,
 }
 
+impl CommandDef {
+    /// Find a parameter definition by name (including aliases)
+    pub fn find_parameter(&self, name: &str) -> Option<&ParameterDef> {
+        self.parameters
+            .as_ref()?
+            .iter()
+            .find(|param| param.matches_name(name))
+    }
+
+    /// Get all required parameters for this command
+    pub fn required_parameters(&self) -> Vec<&ParameterDef> {
+        self.parameters
+            .as_ref()
+            .map(|params| params.iter().filter(|p| p.required).collect())
+            .unwrap_or_default()
+    }
+
+    /// Validate all parameters for this command
+    pub fn validate_parameters(&self, provided_params: &[(String, String)]) -> Vec<String> {
+        let mut errors = Vec::new();
+
+        // Check provided parameters are valid
+        for (param_name, param_value) in provided_params {
+            match self.find_parameter(param_name) {
+                Some(param_def) => {
+                    if let Err(validation_error) = param_def.validate_value(param_value) {
+                        errors.push(validation_error);
+                    }
+                }
+                None => {
+                    errors.push(format!(
+                        "Unknown parameter '{}' for command '{}'",
+                        param_name, self.name
+                    ));
+                }
+            }
+        }
+
+        // Check for missing required parameters
+        let provided_names: std::collections::HashSet<String> = provided_params
+            .iter()
+            .map(|(name, _)| name.to_lowercase())
+            .collect();
+
+        for required_param in self.required_parameters() {
+            let param_name_lower = required_param.name.to_lowercase();
+            let alias_match = required_param
+                .aliases
+                .as_ref()
+                .map(|aliases| {
+                    aliases
+                        .iter()
+                        .any(|alias| provided_names.contains(&alias.to_lowercase()))
+                })
+                .unwrap_or(false);
+
+            if !provided_names.contains(&param_name_lower) && !alias_match {
+                errors.push(format!(
+                    "Missing required parameter '{}' for command '{}'",
+                    required_param.name, self.name
+                ));
+            }
+        }
+
+        errors
+    }
+}
+
 /// Definition of a command parameter
 #[derive(Clone, Debug, Deserialize)]
 pub struct ParameterDef {
     pub name: String,
     #[serde(rename = "type")]
-    pub param_type: Option<String>,
-    pub required: Option<bool>,
-    pub description: Option<String>,
+    pub param_type: ParameterType,
+    #[serde(default)]
+    pub required: bool,
+    pub description: String,
+    pub constraints: Option<ParameterConstraints>,
+    pub default_value: Option<String>,
+    pub aliases: Option<Vec<String>>,
+}
+
+/// Parameter type enumeration
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ParameterType {
+    Int,
+    Float,
+    String,
+    Bool,
+}
+
+/// Parameter constraints for validation
+#[derive(Clone, Debug, Deserialize)]
+pub struct ParameterConstraints {
+    pub min_value: Option<f64>,
+    pub max_value: Option<f64>,
+    pub enum_values: Option<Vec<String>>,
+    pub pattern: Option<String>,
+}
+
+impl ParameterDef {
+    /// Check if this parameter matches a given name (including aliases)
+    pub fn matches_name(&self, name: &str) -> bool {
+        if self.name.eq_ignore_ascii_case(name) {
+            return true;
+        }
+
+        if let Some(aliases) = &self.aliases {
+            return aliases.iter().any(|alias| alias.eq_ignore_ascii_case(name));
+        }
+
+        false
+    }
+
+    /// Validate a parameter value against this definition
+    pub fn validate_value(&self, value: &str) -> Result<(), String> {
+        // Type validation
+        match self.param_type {
+            ParameterType::Int => {
+                let _: i64 = value.parse().map_err(|_| {
+                    format!(
+                        "Parameter '{}' expects an integer, got '{}'",
+                        self.name, value
+                    )
+                })?;
+            }
+            ParameterType::Float => {
+                let parsed_value: f64 = value.parse().map_err(|_| {
+                    format!(
+                        "Parameter '{}' expects a number, got '{}'",
+                        self.name, value
+                    )
+                })?;
+
+                // Check constraints
+                if let Some(constraints) = &self.constraints {
+                    if let Some(min) = constraints.min_value {
+                        if parsed_value < min {
+                            return Err(format!(
+                                "Parameter '{}' value {} is below minimum {}",
+                                self.name, parsed_value, min
+                            ));
+                        }
+                    }
+                    if let Some(max) = constraints.max_value {
+                        if parsed_value > max {
+                            return Err(format!(
+                                "Parameter '{}' value {} exceeds maximum {}",
+                                self.name, parsed_value, max
+                            ));
+                        }
+                    }
+                }
+            }
+            ParameterType::String => {
+                // Check enum constraints
+                if let Some(constraints) = &self.constraints {
+                    if let Some(enum_values) = &constraints.enum_values {
+                        if !enum_values.iter().any(|v| v.eq_ignore_ascii_case(value)) {
+                            return Err(format!(
+                                "Parameter '{}' value '{}' is not one of: {}",
+                                self.name,
+                                value,
+                                enum_values.join(", ")
+                            ));
+                        }
+                    }
+
+                    // Check pattern constraints
+                    if let Some(pattern) = &constraints.pattern {
+                        // For now, just check if it's provided - full regex validation could be added later
+                        if pattern.is_empty() {
+                            return Err(format!(
+                                "Parameter '{}' pattern constraint is invalid",
+                                self.name
+                            ));
+                        }
+                    }
+                }
+            }
+            ParameterType::Bool => {
+                let lower_value = value.to_lowercase();
+                if !matches!(
+                    lower_value.as_str(),
+                    "true" | "false" | "1" | "0" | "on" | "off"
+                ) {
+                    return Err(format!("Parameter '{}' expects a boolean value (true/false, 1/0, on/off), got '{}'", 
+                        self.name, value));
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Represents the loading priority of flavors

@@ -11,7 +11,7 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 use gcode_language_server::config::Config;
 use gcode_language_server::flavor::{CommandDef, FlavorManager};
-use gcode_language_server::gcode::{tokenize_text, Token, TokenKind};
+use gcode_language_server::gcode::{validate_text, ValidationError, ValidationWarning};
 
 struct Backend {
     client: Client,
@@ -196,17 +196,21 @@ impl Backend {
 
         let mut diagnostics = Vec::new();
 
-        // Tokenize the document content
-        let tokens = tokenize_text(&doc_state.content);
+        // Use enhanced validation with parameter checking
+        let validated_tokens = validate_text(&doc_state.content, &doc_state.commands);
 
-        // Check each command token for unknown commands
-        for token in tokens.iter() {
-            if token.kind == TokenKind::Command {
-                let command = token.text.to_uppercase();
-                if !doc_state.commands.contains_key(&command) {
-                    // Create diagnostic for unknown command
-                    let diagnostic =
-                        self.create_unknown_command_diagnostic(token, &doc_state.content);
+        // Convert validation results to LSP diagnostics
+        for validated_token in validated_tokens {
+            if let Some(validation) = validated_token.validation {
+                // Process validation errors
+                for error in validation.errors {
+                    let diagnostic = self.create_validation_diagnostic(error, &doc_state.content);
+                    diagnostics.push(diagnostic);
+                }
+
+                // Process validation warnings
+                for warning in validation.warnings {
+                    let diagnostic = self.create_warning_diagnostic(warning, &doc_state.content);
                     diagnostics.push(diagnostic);
                 }
             }
@@ -218,18 +222,157 @@ impl Backend {
             .await;
     }
 
-    /// Create a diagnostic for an unknown command
-    fn create_unknown_command_diagnostic(&self, token: &Token<'_>, content: &str) -> Diagnostic {
-        // Convert byte positions to line/character positions
-        let range = self.byte_range_to_lsp_range(token.start, token.end, content);
+    /// Create a diagnostic from a validation error
+    fn create_validation_diagnostic(&self, error: ValidationError, content: &str) -> Diagnostic {
+        match error {
+            ValidationError::UnknownCommand {
+                command,
+                start,
+                end,
+            } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::WARNING),
+                    code: Some(NumberOrString::String("unknown_command".to_string())),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!("Unknown G-code command: {}", command),
+                    ..Default::default()
+                }
+            }
+            ValidationError::UnknownParameter {
+                param,
+                command,
+                start,
+                end,
+            } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("unknown_parameter".to_string())),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!("Unknown parameter '{}' for command '{}'", param, command),
+                    ..Default::default()
+                }
+            }
+            ValidationError::MissingRequiredParameter {
+                param,
+                command,
+                command_start,
+                command_end,
+            } => {
+                let range = self.byte_range_to_lsp_range(command_start, command_end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String(
+                        "missing_required_parameter".to_string(),
+                    )),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!(
+                        "Missing required parameter '{}' for command '{}'",
+                        param, command
+                    ),
+                    ..Default::default()
+                }
+            }
+            ValidationError::InvalidParameterType {
+                param,
+                expected,
+                actual,
+                start,
+                end,
+            } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("invalid_parameter_type".to_string())),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!(
+                        "Parameter '{}' expects {} but got '{}'",
+                        param, expected, actual
+                    ),
+                    ..Default::default()
+                }
+            }
+            ValidationError::ConstraintViolation {
+                param,
+                constraint,
+                value,
+                start,
+                end,
+            } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("constraint_violation".to_string())),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!(
+                        "Parameter '{}' value '{}' violates constraint: {}",
+                        param, value, constraint
+                    ),
+                    ..Default::default()
+                }
+            }
+        }
+    }
 
-        Diagnostic {
-            range,
-            severity: Some(DiagnosticSeverity::WARNING),
-            code: Some(NumberOrString::String("unknown_command".to_string())),
-            source: Some("gcode-ls".to_string()),
-            message: format!("Unknown G-code command: {}", token.text),
-            ..Default::default()
+    /// Create a diagnostic from a validation warning
+    fn create_warning_diagnostic(&self, warning: ValidationWarning, content: &str) -> Diagnostic {
+        match warning {
+            ValidationWarning::ParameterWithoutValue { param, start, end } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::INFORMATION),
+                    code: Some(NumberOrString::String(
+                        "parameter_without_value".to_string(),
+                    )),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!("Parameter '{}' has no explicit value", param),
+                    ..Default::default()
+                }
+            }
+            ValidationWarning::UnusualParameterValue {
+                param,
+                value,
+                suggestion,
+                start,
+                end,
+            } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::HINT),
+                    code: Some(NumberOrString::String(
+                        "unusual_parameter_value".to_string(),
+                    )),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!(
+                        "Parameter '{}' has unusual value '{}'. Suggestion: {}",
+                        param, value, suggestion
+                    ),
+                    ..Default::default()
+                }
+            }
+            ValidationWarning::MoveCommandWithoutCoordinates {
+                command,
+                start,
+                end,
+            } => {
+                let range = self.byte_range_to_lsp_range(start, end, content);
+                Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::INFORMATION),
+                    code: Some(NumberOrString::String("move_without_coordinates".to_string())),
+                    source: Some("gcode-ls".to_string()),
+                    message: format!("Move command '{}' has no coordinate parameters (X, Y, Z, E). Consider adding coordinates to specify where to move.", command),
+                    ..Default::default()
+                }
+            }
         }
     }
 
