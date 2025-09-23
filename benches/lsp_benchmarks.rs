@@ -1,7 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use gcode_language_server::{parse_line, validate_document, Config, FlavorRegistry};
-use std::fs;
-use tower_lsp::lsp_types::{Position, TextDocumentItem, Uri};
+use gcode_language_server::{parse_line, validate_document, FlavorRegistry};
 
 /// Generate G-code documents of different sizes for LSP benchmarking
 fn generate_document(lines: usize, pattern: &str) -> String {
@@ -69,8 +67,8 @@ fn generate_document(lines: usize, pattern: &str) -> String {
 
 /// Benchmark validation performance with different file sizes
 fn bench_validation_performance(c: &mut Criterion) {
-    let config = Config::default();
-    let registry = FlavorRegistry::new(&config).expect("Failed to create flavor registry");
+    let mut registry = FlavorRegistry::new();
+    registry.add_embedded_prusa_flavor();
 
     let file_sizes = vec![100, 1_000, 10_000, 50_000];
     let patterns = vec!["typical_print", "complex_features"];
@@ -80,15 +78,14 @@ fn bench_validation_performance(c: &mut Criterion) {
     for &size in &file_sizes {
         for pattern in &patterns {
             let content = generate_document(size, pattern);
-            let lines: Vec<&str> = content.lines().collect();
 
             group.throughput(Throughput::Elements(size as u64));
             group.bench_with_input(
                 BenchmarkId::new(format!("validate_{}_{}", pattern, size), size),
-                &lines,
-                |b, lines| {
+                &content,
+                |b, content| {
                     b.iter(|| {
-                        let result = validate_document(black_box(lines), black_box(&registry));
+                        let result = validate_document(black_box(content), black_box(&registry));
                         black_box(result)
                     })
                 },
@@ -101,8 +98,8 @@ fn bench_validation_performance(c: &mut Criterion) {
 
 /// Benchmark parsing + validation pipeline
 fn bench_full_pipeline(c: &mut Criterion) {
-    let config = Config::default();
-    let registry = FlavorRegistry::new(&config).expect("Failed to create flavor registry");
+    let mut registry = FlavorRegistry::new();
+    registry.add_embedded_prusa_flavor();
 
     let file_sizes = vec![1_000, 10_000, 50_000];
 
@@ -124,7 +121,7 @@ fn bench_full_pipeline(c: &mut Criterion) {
                     let parsed: Vec<_> = lines.iter().map(|line| parse_line(line)).collect();
 
                     // Validate document
-                    let diagnostics = validate_document(&lines, &registry);
+                    let diagnostics = validate_document(content, &registry);
 
                     black_box((parsed, diagnostics))
                 })
@@ -137,8 +134,8 @@ fn bench_full_pipeline(c: &mut Criterion) {
 
 /// Benchmark validation with different error rates
 fn bench_validation_error_scenarios(c: &mut Criterion) {
-    let config = Config::default();
-    let registry = FlavorRegistry::new(&config).expect("Failed to create flavor registry");
+    let mut registry = FlavorRegistry::new();
+    registry.add_embedded_prusa_flavor();
 
     let mut group = c.benchmark_group("validation_errors");
 
@@ -147,11 +144,10 @@ fn bench_validation_error_scenarios(c: &mut Criterion) {
         .map(|i| format!("G1 X{:.3} Y{:.3} F1500", (i as f32) * 0.1, (i as f32) * 0.1))
         .collect::<Vec<_>>()
         .join("\n");
-    let clean_lines: Vec<&str> = clean_content.lines().collect();
 
     group.bench_function("no_errors", |b| {
         b.iter(|| {
-            let result = validate_document(black_box(&clean_lines), black_box(&registry));
+            let result = validate_document(black_box(&clean_content), black_box(&registry));
             black_box(result)
         })
     });
@@ -161,11 +157,10 @@ fn bench_validation_error_scenarios(c: &mut Criterion) {
         .map(|_| "G1".to_string()) // G1 without required coordinates
         .collect::<Vec<_>>()
         .join("\n");
-    let error_lines: Vec<&str> = error_content.lines().collect();
 
     group.bench_function("many_errors", |b| {
         b.iter(|| {
-            let result = validate_document(black_box(&error_lines), black_box(&registry));
+            let result = validate_document(black_box(&error_content), black_box(&registry));
             black_box(result)
         })
     });
@@ -185,11 +180,10 @@ fn bench_validation_error_scenarios(c: &mut Criterion) {
         })
         .collect::<Vec<_>>()
         .join("\n");
-    let mixed_lines: Vec<&str> = mixed_content.lines().collect();
 
     group.bench_function("mixed_errors", |b| {
         b.iter(|| {
-            let result = validate_document(black_box(&mixed_lines), black_box(&registry));
+            let result = validate_document(black_box(&mixed_content), black_box(&registry));
             black_box(result)
         })
     });
@@ -199,8 +193,8 @@ fn bench_validation_error_scenarios(c: &mut Criterion) {
 
 /// Benchmark flavor registry operations
 fn bench_flavor_operations(c: &mut Criterion) {
-    let config = Config::default();
-    let registry = FlavorRegistry::new(&config).expect("Failed to create flavor registry");
+    let mut registry = FlavorRegistry::new();
+    registry.add_embedded_prusa_flavor();
 
     let mut group = c.benchmark_group("flavor_operations");
 
@@ -212,7 +206,7 @@ fn bench_flavor_operations(c: &mut Criterion) {
             command,
             |b, cmd| {
                 b.iter(|| {
-                    let result = registry.find_command(black_box(cmd));
+                    let result = registry.get_command(black_box(cmd));
                     black_box(result)
                 })
             },
