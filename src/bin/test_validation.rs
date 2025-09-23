@@ -1,22 +1,77 @@
 use gcode_language_server::validation::engine::{validate_document, Severity};
 use gcode_language_server::flavor::registry::FlavorRegistry;
+use gcode_language_server::flavor::schema::{Flavor, FlavorFile};
+use std::env;
+use std::fs;
 
-fn main() {
-    // Test validation with G0/G1 with and without parameters
-    let test_content = r#"; Test cases for G0/G1 validation
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+    
+    // Parse command line arguments
+    let mut flavor_name = "prusa".to_string();
+    let mut file_content = None;
+    
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--flavor" => {
+                if i + 1 < args.len() {
+                    flavor_name = args[i + 1].clone();
+                    i += 2;
+                } else {
+                    eprintln!("Error: --flavor requires a value");
+                    std::process::exit(1);
+                }
+            }
+            arg if !arg.starts_with("--") => {
+                // Treat as filename
+                file_content = Some(fs::read_to_string(arg)?);
+                i += 1;
+            }
+            _ => {
+                eprintln!("Usage: test_validation [--flavor <flavor>] [filename]");
+                std::process::exit(1);
+            }
+        }
+    }
+    
+    // Use provided file content or default test content
+    let test_content = file_content.unwrap_or_else(|| {
+        r#"; Test cases for G0/G1 validation
 G0
 G1
 G0 X10
 G1 X10 Y20
 G0 F1800
 G1 E5.0 F1800
-"#;
+"#.to_string()
+    });
 
     let mut registry = FlavorRegistry::new();
-    registry.add_embedded_prusa_flavor();
-    assert!(registry.set_active_flavor("prusa"));
+    
+    // Load the specified flavor
+    match flavor_name.as_str() {
+        "prusa" => {
+            registry.add_embedded_prusa_flavor();
+        }
+        "marlin" => {
+            let marlin_toml = fs::read_to_string("resources/flavors/marlin.gcode-flavor.toml")?;
+            let flavor_file: FlavorFile = toml::from_str(&marlin_toml)?;
+            let flavor = Flavor::from(flavor_file);
+            registry.add_flavor(flavor);
+        }
+        _ => {
+            eprintln!("Error: Unknown flavor '{}'", flavor_name);
+            std::process::exit(1);
+        }
+    }
+    
+    if !registry.set_active_flavor(&flavor_name) {
+        eprintln!("Error: Failed to activate flavor '{}'", flavor_name);
+        std::process::exit(1);
+    }
 
-    let result = validate_document(test_content, &registry);
+    let result = validate_document(&test_content, &registry);
     
     println!("Validation result:");
     println!("Total diagnostics: {}", result.diagnostics.len());
@@ -52,4 +107,6 @@ G1 E5.0 F1800
         .filter(|d| (d.line == 4 || d.line == 5) && d.severity == Severity::Error)
         .collect();
     println!("Coordinate command errors (lines 4-5): {}", coord_errors.len());
+    
+    Ok(())
 }

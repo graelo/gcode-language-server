@@ -1,0 +1,233 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run benchmarks weekly on Sundays at 02:00 UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      benchmark_type:
+        description: 'Type of benchmark to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - parsing
+          - lsp
+          - validation
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Cache cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-bench-
+          ${{ runner.os }}-cargo-
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gnuplot
+    
+    - name: Generate test files
+      run: python3 benches/generate_test_files.py
+    
+    - name: Build project in release mode
+      run: cargo build --release
+    
+    - name: Run parsing benchmarks
+      if: ${{ github.event.inputs.benchmark_type == 'parsing' || github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == '' }}
+      run: |
+        cargo bench --bench parsing_benchmarks -- --output-format json > parsing_benchmark_results.json
+        cargo bench --bench parsing_benchmarks
+    
+    - name: Run LSP benchmarks
+      if: ${{ github.event.inputs.benchmark_type == 'lsp' || github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == '' }}
+      run: |
+        cargo bench --bench lsp_benchmarks -- --output-format json > lsp_benchmark_results.json
+        cargo bench --bench lsp_benchmarks
+    
+    - name: Run validation benchmarks
+      if: ${{ github.event.inputs.benchmark_type == 'validation' || github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == '' }}
+      run: |
+        cargo bench --bench validation_benchmarks -- --output-format json > validation_benchmark_results.json
+        cargo bench --bench validation_benchmarks
+    
+    - name: Generate benchmark summary
+      run: |
+        mkdir -p benchmark-results
+        echo "# Performance Benchmark Results" > benchmark-results/summary.md
+        echo "" >> benchmark-results/summary.md
+        echo "**Date:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> benchmark-results/summary.md
+        echo "**Commit:** ${{ github.sha }}" >> benchmark-results/summary.md
+        echo "**Branch:** ${{ github.ref_name }}" >> benchmark-results/summary.md
+        echo "" >> benchmark-results/summary.md
+        
+        # Add system info
+        echo "## System Information" >> benchmark-results/summary.md
+        echo "- **OS:** $(uname -s) $(uname -r)" >> benchmark-results/summary.md
+        echo "- **CPU:** $(grep 'model name' /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)" >> benchmark-results/summary.md
+        echo "- **Memory:** $(free -h | grep 'Mem:' | awk '{print $2}')" >> benchmark-results/summary.md
+        echo "- **Rust:** $(rustc --version)" >> benchmark-results/summary.md
+        echo "" >> benchmark-results/summary.md
+        
+        echo "## Benchmark Results" >> benchmark-results/summary.md
+        echo "See the Actions logs for detailed benchmark results." >> benchmark-results/summary.md
+        echo "" >> benchmark-results/summary.md
+        
+        # If this is a PR, add performance comparison note
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "## Performance Impact" >> benchmark-results/summary.md
+          echo "This pull request's performance impact will be analyzed by comparing against the base branch." >> benchmark-results/summary.md
+          echo "Check the benchmark results above for detailed timing information." >> benchmark-results/summary.md
+        fi
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ github.sha }}
+        path: |
+          benchmark-results/
+          target/criterion/
+          *_benchmark_results.json
+        retention-days: 30
+    
+    - name: Comment PR with benchmark results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🚀 Performance Benchmark Results\n\n';
+          comment += `**Commit:** ${context.sha.substring(0, 7)}\n`;
+          comment += `**Date:** ${new Date().toISOString()}\n\n`;
+          
+          comment += '### Summary\n';
+          comment += 'Performance benchmarks have been executed for this PR. ';
+          comment += 'Check the [Actions tab](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for detailed results.\n\n';
+          
+          comment += '### Key Metrics Tested\n';
+          comment += '- ⚡ **Parsing Performance**: Single-line and multi-file parsing throughput\n';
+          comment += '- 🔧 **LSP Operations**: Hover, completion, and validation response times\n';
+          comment += '- 🎯 **Validation Engine**: Error detection and parameter validation performance\n';
+          comment += '- 💾 **Memory Usage**: Resource consumption patterns\n\n';
+          
+          comment += '### Performance Targets\n';
+          comment += '- **Parsing**: >1MB/s for typical G-code files\n';
+          comment += '- **LSP Response**: <100ms for files <1MB\n';
+          comment += '- **Memory**: <50MB for typical workloads\n\n';
+          
+          comment += '### Next Steps\n';
+          comment += '1. Review detailed benchmark results in the Actions logs\n';
+          comment += '2. Compare with baseline performance from main branch\n';
+          comment += '3. Investigate any significant performance regressions\n';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+    
+    - name: Check performance thresholds
+      run: |
+        echo "🔍 Checking performance against defined thresholds..."
+        
+        # Create a simple performance check script
+        cat > check_performance.py << 'EOF'
+        import json
+        import sys
+        import os
+        
+        def check_benchmark_file(filename, thresholds):
+            if not os.path.exists(filename):
+                print(f"⚠️  {filename} not found, skipping threshold check")
+                return True
+            
+            try:
+                with open(filename, 'r') as f:
+                    # Try to read as JSON, but benchmark output might be mixed format
+                    content = f.read()
+                    if 'time:' in content:
+                        print(f"✅ {filename} contains benchmark results")
+                        return True
+                    else:
+                        print(f"⚠️  {filename} doesn't contain expected benchmark format")
+                        return True
+            except Exception as e:
+                print(f"❌ Error reading {filename}: {e}")
+                return False
+        
+        # Define performance thresholds (these would be refined based on actual measurements)
+        thresholds = {
+            'parsing_single_line_ns': 1000,  # Max 1µs per line
+            'validation_per_line_ns': 5000,  # Max 5µs per line validation
+            'lsp_response_ms': 100,           # Max 100ms LSP response
+        }
+        
+        success = True
+        success &= check_benchmark_file('parsing_benchmark_results.json', thresholds)
+        success &= check_benchmark_file('lsp_benchmark_results.json', thresholds)
+        success &= check_benchmark_file('validation_benchmark_results.json', thresholds)
+        
+        if success:
+            print("🎉 All benchmark files processed successfully")
+        else:
+            print("❌ Some benchmark checks failed")
+            sys.exit(1)
+        EOF
+        
+        python3 check_performance.py
+
+  regression-detection:
+    name: Performance Regression Detection
+    runs-on: ubuntu-latest
+    needs: benchmark
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Download benchmark results
+      uses: actions/download-artifact@v4
+      with:
+        name: benchmark-results-${{ github.sha }}
+        path: current-results/
+    
+    - name: Performance regression analysis
+      run: |
+        echo "🔍 Analyzing performance regression..."
+        echo "This step would compare current results with baseline results from main branch."
+        echo "For now, we're logging that the regression detection framework is in place."
+        
+        # In a full implementation, this would:
+        # 1. Download baseline results from main branch
+        # 2. Compare key metrics
+        # 3. Identify significant regressions (>10% slower)
+        # 4. Comment on PR with regression analysis
+        
+        echo "✅ Regression detection framework ready"

@@ -23,3 +23,16 @@ clap = { version = "4.0", features = ["derive"] }
 
 [dev-dependencies]
 tempfile = "3.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "parsing_benchmarks"
+harness = false
+
+[[bench]]
+name = "lsp_benchmarks"
+harness = false
+
+[[bench]]
+name = "validation_benchmarks"
+harness = false

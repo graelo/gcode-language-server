@@ -1,7 +1,9 @@
 [flavor]
 name = "prusa"
-version = "1.0"
-description = "Comprehensive Prusa G-code flavor with common 3D printing commands"
+version = "2.0"
+description = "Comprehensive Prusa Buddy firmware G-code flavor based on official documentation"
+
+# ===== MOVEMENT COMMANDS =====
 
 [[commands]]
 name = "G0"
@@ -68,27 +70,312 @@ required = false
 description = "Feed rate (movement speed)"
 
 [[commands]]
+name = "G2"
+description_short = "Clockwise arc move"
+description_long = "Controlled arc move clockwise. Creates curved paths for smooth motion."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X coordinate of end point"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y coordinate of end point"
+
+[[commands.parameters]]
+name = "I"
+type = "float"
+required = false
+description = "X offset of arc center from start point"
+
+[[commands.parameters]]
+name = "J"
+type = "float"
+required = false
+description = "Y offset of arc center from start point"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder coordinate"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Feed rate"
+
+[[commands]]
+name = "G3"
+description_short = "Counter-clockwise arc move"
+description_long = "Controlled arc move counter-clockwise. Creates curved paths for smooth motion."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X coordinate of end point"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y coordinate of end point"
+
+[[commands.parameters]]
+name = "I"
+type = "float"
+required = false
+description = "X offset of arc center from start point"
+
+[[commands.parameters]]
+name = "J"
+type = "float"
+required = false
+description = "Y offset of arc center from start point"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder coordinate"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Feed rate"
+
+[[commands]]
+name = "G4"
+description_short = "Dwell (pause)"
+description_long = "Pause for a specified time. Used for delays in printing process."
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Pause time in milliseconds"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = false
+description = "Pause time in seconds"
+
+# ===== HOMING AND CALIBRATION =====
+
+[[commands]]
+name = "G26"
+description_short = "Mesh validation pattern"
+description_long = "First layer calibration, must be run within selftest only."
+
+[[commands]]
+name = "G27"
+description_short = "Park toolhead"
+description_long = "Park the toolhead at a predefined position."
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Park position (P0 for default)"
+
+[[commands]]
 name = "G28"
-description_short = "Home axes"
-description_long = "G28 homes the printer axes. On Prusa firmware, G28 can home all axes or specific ones. Without parameters, homes all axes."
+description_short = "Move to origin (home)"
+description_long = "Performs precise homing. G28 without parameters homes all axes including MMU3. Buddy firmware specific parameters included."
 
 [[commands.parameters]]
 name = "X"
 type = "bool"
 required = false
-description = "Home X axis (any value homes X, omit to skip)"
+description = "Home X axis"
 
 [[commands.parameters]]
 name = "Y"
 type = "bool"
 required = false
-description = "Home Y axis (any value homes Y, omit to skip)"
+description = "Home Y axis"
 
 [[commands.parameters]]
 name = "Z"
 type = "bool"
 required = false
-description = "Home Z axis (any value homes Z, omit to skip)"
+description = "Home Z axis"
+
+[[commands.parameters]]
+name = "C"
+type = "bool"
+required = false
+description = "Home Z-axis only"
+
+[[commands.parameters]]
+name = "P"
+type = "bool"
+required = false
+description = "Invalidate selector homing validity flag (MMU3)"
+
+[[commands.parameters]]
+name = "I"
+type = "bool"
+required = false
+description = "Invalidate idler homing validity flag (MMU3)"
+
+[[commands]]
+name = "G29"
+description_short = "Detailed Z-probe"
+description_long = "Invalidates previous bed mesh measurements and starts Mesh Bed Leveling (MBL)."
+
+[[commands]]
+name = "G30"
+description_short = "Single Z-probe"
+description_long = "Perform a single Z-probe at the current XY position."
+
+# ===== PRUSA-SPECIFIC CALIBRATION =====
+
+[[commands]]
+name = "G64"
+description_short = "Measure Z-axis height"
+description_long = "Measure the Z length and save max_z_pos into EEPROM. Shows results on serial line."
+
+[[commands.parameters]]
+name = "D"
+type = "float"
+required = false
+description = "Additional Z offset to add to measurement"
+
+[[commands]]
+name = "G65"
+description_short = "Advanced homing/part measurement"
+description_long = "iX printers only. Homing to any endstop with CNC workspace support."
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Home X axis"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Home Y axis"
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false
+description = "Home Z axis"
+
+[[commands.parameters]]
+name = "E"
+type = "bool"
+required = false
+description = "Home E axis"
+
+[[commands.parameters]]
+name = "D"
+type = "string"
+required = false
+description = "Direction and distance (e.g., '+100' or '-50')"
+
+[[commands]]
+name = "G75"
+description_short = "Print temperature interpolation"
+description_long = "Enable print temperature interpolation for better temperature control."
+
+[[commands]]
+name = "G76"
+description_short = "PINDA probe temperature interpolation"
+description_long = "Calibrate PINDA probe temperature compensation."
+
+[[commands]]
+name = "G80"
+description_short = "Mesh-based Z probe"
+description_long = "MK4 printer with MK3 G-code reverse compatibility. Performs Mesh Bed Leveling as with G29."
+
+[[commands]]
+name = "G162"
+description_short = "Calibrate Z"
+description_long = "Z-axis leveling calibration."
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false
+description = "Calibrate Z axis"
+
+[[commands]]
+name = "G163"
+description_short = "Measure axis length"
+description_long = "Measure the length of specified axes."
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Measure X axis length"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Measure Y axis length"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = false
+description = "Set sensitivity"
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Set measurement period"
+
+[[commands]]
+name = "G425"
+description_short = "Auto-calibration with cube"
+description_long = "Automatic calibration with calibration object. Toolhead offset and backlash calibration."
+
+# ===== COORDINATE SYSTEMS =====
+
+[[commands]]
+name = "G54"
+description_short = "Select workspace 1"
+description_long = "iX printers only. Select workspace coordinate system G54."
+
+[[commands]]
+name = "G55"
+description_short = "Select workspace 2"
+description_long = "iX printers only. Select workspace coordinate system G55."
+
+[[commands]]
+name = "G56"
+description_short = "Select workspace 3"
+description_long = "iX printers only. Select workspace coordinate system G56."
+
+[[commands]]
+name = "G57"
+description_short = "Select workspace 4"
+description_long = "iX printers only. Select workspace coordinate system G57."
+
+[[commands]]
+name = "G58"
+description_short = "Select workspace 5"
+description_long = "iX printers only. Select workspace coordinate system G58."
+
+[[commands]]
+name = "G59"
+description_short = "Select workspace 6"
+description_long = "iX printers only. Select workspace coordinate system G59."
 
 [[commands]]
 name = "G90"
@@ -129,6 +416,337 @@ type = "float"
 required = false
 description = "Extruder coordinate to set"
 
+# ===== MACHINE CONTROL M-CODES =====
+
+[[commands]]
+name = "M0"
+description_short = "Stop or unconditional stop"
+description_long = "Pauses a print and waits for user interaction."
+
+[[commands]]
+name = "M17"
+description_short = "Enable/power all stepper motors"
+description_long = "Energize all stepper motors."
+
+[[commands]]
+name = "M18"
+description_short = "Disable all stepper motors"
+description_long = "Disable all stepper motors to reduce power consumption and heat."
+
+# ===== SD CARD / USB DRIVE COMMANDS =====
+
+[[commands]]
+name = "M20"
+description_short = "List SD card"
+description_long = "Lists the contents of the USB drive."
+
+[[commands]]
+name = "M23"
+description_short = "Select SD file"
+description_long = "Select a file from the USB drive."
+
+[[commands.parameters]]
+name = "filename"
+type = "string"
+required = true
+description = "File name to select"
+
+[[commands]]
+name = "M24"
+description_short = "Start/resume SD print"
+description_long = "Starts or resumes a print from USB drive."
+
+[[commands]]
+name = "M25"
+description_short = "Pause SD print"
+description_long = "Pauses a print from the USB drive."
+
+[[commands.parameters]]
+name = "U"
+type = "bool"
+required = false
+description = "Unload filament when paused"
+
+[[commands]]
+name = "M27"
+description_short = "Report SD print status"
+description_long = "Reports the status of a print from USB drive."
+
+[[commands]]
+name = "M28"
+description_short = "Begin write to SD card"
+description_long = "Begin writing to USB drive."
+
+[[commands.parameters]]
+name = "filename"
+type = "string"
+required = true
+description = "File name to write"
+
+[[commands]]
+name = "M29"
+description_short = "Stop writing to SD card"
+description_long = "Stop writing to USB drive."
+
+[[commands]]
+name = "M30"
+description_short = "Delete file on SD card"
+description_long = "Delete a file on the USB drive."
+
+[[commands.parameters]]
+name = "filename"
+type = "string"
+required = true
+description = "File name to delete"
+
+[[commands]]
+name = "M31"
+description_short = "Output time since last M109"
+description_long = "Output time since last M109 or SD card start to serial."
+
+[[commands]]
+name = "M32"
+description_short = "Select file and start SD print"
+description_long = "Select a file and start printing from USB drive."
+
+[[commands.parameters]]
+name = "filename"
+type = "string"
+required = true
+description = "File name to print"
+
+# ===== I/O AND NETWORKING =====
+
+[[commands]]
+name = "M42"
+description_short = "Switch I/O pin"
+description_long = "Control digital I/O pins directly."
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = true
+description = "Pin number"
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Pin state (0 or 1)"
+
+[[commands]]
+name = "M46"
+description_short = "Show assigned IP address"
+description_long = "Display the printer's assigned IP address."
+
+# ===== PRUSA-SPECIFIC TESTING =====
+
+[[commands]]
+name = "M50"
+description_short = "Selftest"
+description_long = "Enforce selftest with optional component selection."
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "X axis test"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Y axis test"
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false
+description = "Z axis test"
+
+[[commands.parameters]]
+name = "F"
+type = "bool"
+required = false
+description = "Fan test"
+
+[[commands.parameters]]
+name = "H"
+type = "bool"
+required = false
+description = "Heater test"
+
+# ===== PRINT PROGRESS AND TIMING =====
+
+[[commands]]
+name = "M73"
+description_short = "Set/get build percentage"
+description_long = "Tells the firmware the current build progress percentage to be displayed."
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Percent finished (0-100)"
+
+[[commands.parameters]]
+name = "R"
+type = "int"
+required = false
+description = "Time remaining in minutes"
+
+[[commands.parameters]]
+name = "T"
+type = "int"
+required = false
+description = "Time to pause in minutes"
+
+[[commands]]
+name = "M74"
+description_short = "Set weight on print bed"
+description_long = "Set mass for Input Shaper calculations."
+
+[[commands.parameters]]
+name = "W"
+type = "float"
+required = true
+description = "Total mass in grams of everything on the bed"
+
+[[commands]]
+name = "M75"
+description_short = "Start print timer"
+description_long = "Start the print job timer."
+
+[[commands]]
+name = "M76"
+description_short = "Pause print timer"
+description_long = "Pause the print job timer."
+
+[[commands]]
+name = "M77"
+description_short = "Stop print job timer"
+description_long = "Stop the print job timer."
+
+# ===== POWER CONTROL =====
+
+[[commands]]
+name = "M80"
+description_short = "ATX Power On"
+description_long = "Turn on the power supply. Suicide pin control."
+
+[[commands.parameters]]
+name = "S"
+type = "bool"
+required = false
+description = "Report current state and exit"
+
+[[commands]]
+name = "M81"
+description_short = "ATX Power Off"
+description_long = "Turn off power, including power supply if possible. Full shutdown command."
+
+# ===== EXTRUDER MODES =====
+
+[[commands]]
+name = "M82"
+description_short = "Absolute extruder mode"
+description_long = "Set extruder to absolute mode. E coordinates are interpreted as absolute positions."
+
+[[commands]]
+name = "M83"
+description_short = "Relative extruder mode"
+description_long = "Set extruder to relative mode. E coordinates are interpreted as relative to current extruder position."
+
+[[commands]]
+name = "M84"
+description_short = "Stop idle hold"
+description_long = "Disable stepper motors or set timeout."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Timeout in seconds"
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Disable X axis stepper"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Disable Y axis stepper"
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false
+description = "Disable Z axis stepper"
+
+[[commands.parameters]]
+name = "E"
+type = "bool"
+required = false
+description = "Disable E axis stepper"
+
+[[commands]]
+name = "M85"
+description_short = "Set inactivity shutdown timer"
+description_long = "Set the inactivity timeout for automatic shutdown."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Timeout in seconds"
+
+[[commands]]
+name = "M86"
+description_short = "Set safety timeout"
+description_long = "Set safety timeout parameters."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Timeout in seconds"
+
+# ===== MOTION SETTINGS =====
+
+[[commands]]
+name = "M92"
+description_short = "Set axis steps per unit"
+description_long = "Set the number of steps per unit for each axis."
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X axis steps per mm"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y axis steps per mm"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z axis steps per mm"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "E axis steps per mm"
+
+# ===== TEMPERATURE CONTROL =====
+
 [[commands]]
 name = "M104"
 description_short = "Set extruder temperature"
@@ -145,6 +763,33 @@ name = "T"
 type = "int"
 required = false
 description = "Tool number (default: current tool)"
+
+[[commands]]
+name = "M105"
+description_short = "Get extruder temperature"
+description_long = "Request temperature report from all sensors."
+
+[[commands]]
+name = "M106"
+description_short = "Fan on"
+description_long = "Set part cooling fan speed. Controls the print cooling fan, not the hotend fan."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Fan speed: 0-255 (0 = off, 255 = full speed)"
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Fan index (default: 0)"
+
+[[commands]]
+name = "M107"
+description_short = "Fan off"
+description_long = "Turn off the part cooling fan. Equivalent to M106 S0."
 
 [[commands]]
 name = "M109"
@@ -164,6 +809,132 @@ required = false
 description = "Tool number (default: current tool)"
 
 [[commands]]
+name = "M110"
+description_short = "Set current line number"
+description_long = "Set the current line number for error recovery."
+
+[[commands.parameters]]
+name = "N"
+type = "int"
+required = true
+description = "Line number"
+
+[[commands]]
+name = "M111"
+description_short = "Set debug level"
+description_long = "Set firmware debug output level."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Debug level"
+
+[[commands]]
+name = "M112"
+description_short = "Full (emergency) stop"
+description_long = "Emergency stop - immediately halt all operations."
+
+[[commands]]
+name = "M113"
+description_short = "Host keepalive"
+description_long = "Set host keepalive interval."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Interval in seconds"
+
+[[commands]]
+name = "M114"
+description_short = "Get current position"
+description_long = "Report current position of all axes."
+
+[[commands]]
+name = "M115"
+description_short = "Get firmware version and capabilities"
+description_long = "Get firmware version and supported capabilities."
+
+[[commands]]
+name = "M117"
+description_short = "Display message"
+description_long = "Set LCD message text, if possible."
+
+[[commands.parameters]]
+name = "message"
+type = "string"
+required = true
+description = "Message text to display"
+
+[[commands]]
+name = "M118"
+description_short = "Echo message on host"
+description_long = "Display a message in the host console."
+
+[[commands.parameters]]
+name = "message"
+type = "string"
+required = true
+description = "Message to echo"
+
+[[commands]]
+name = "M119"
+description_short = "Get endstop status"
+description_long = "Report the status of all endstops."
+
+[[commands]]
+name = "M120"
+description_short = "Enable endstops"
+description_long = "Enable endstop detection."
+
+[[commands]]
+name = "M121"
+description_short = "Disable endstops"
+description_long = "Disable endstop detection."
+
+[[commands]]
+name = "M122"
+description_short = "Debug stepper drivers"
+description_long = "Report driver configuration and status."
+
+[[commands]]
+name = "M123"
+description_short = "Tachometer value"
+description_long = "Print fan speed on serial port."
+
+[[commands]]
+name = "M125"
+description_short = "Store position and park"
+description_long = "Store current position and move to parking position. Called on pause."
+
+[[commands.parameters]]
+name = "L"
+type = "float"
+required = false
+description = "Override retract length"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "Override X park position"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Override Y park position"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Override Z raise amount"
+
+# ===== BED TEMPERATURE =====
+
+[[commands]]
 name = "M140"
 description_short = "Set bed temperature"
 description_long = "Set heated bed temperature without waiting. Non-blocking bed temperature setting."
@@ -175,8 +946,114 @@ required = true
 description = "Target bed temperature in Celsius"
 
 [[commands]]
+name = "M142"
+description_short = "Set cooler temperature"
+description_long = "Set target heatbreak cooling temperature."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Heatbreak cooling temp in Celsius"
+
+# ===== LED CONTROL =====
+
+[[commands]]
+name = "M150"
+description_short = "Set LED color"
+description_long = "Set display LED color and animations. Supports RGB/HSV color space and various effects."
+
+[[commands.parameters]]
+name = "R"
+type = "int"
+required = false
+description = "Red intensity (0-255)"
+
+[[commands.parameters]]
+name = "G"
+type = "int"
+required = false
+description = "Green intensity (0-255)"
+
+[[commands.parameters]]
+name = "B"
+type = "int"
+required = false
+description = "Blue intensity (0-255)"
+
+[[commands.parameters]]
+name = "H"
+type = "int"
+required = false
+description = "Hue (0-360)"
+
+[[commands.parameters]]
+name = "S"
+type = "string"
+required = false
+description = "Printer state or saturation (0-100)"
+
+[[commands.parameters]]
+name = "V"
+type = "int"
+required = false
+description = "Value/brightness (0-100)"
+
+[[commands.parameters]]
+name = "A"
+type = "string"
+required = false
+description = "Animation type (SolidColor/Fading)"
+
+[[commands]]
+name = "M151"
+description_short = "LED control for side LED lights"
+description_long = "Basic settings same as M150 with additional duration and transition parameters."
+
+[[commands.parameters]]
+name = "R"
+type = "int"
+required = false
+description = "Red intensity (0-255)"
+
+[[commands.parameters]]
+name = "G"
+type = "int"
+required = false
+description = "Green intensity (0-255)"
+
+[[commands.parameters]]
+name = "B"
+type = "int"
+required = false
+description = "Blue intensity (0-255)"
+
+[[commands.parameters]]
+name = "D"
+type = "int"
+required = false
+description = "Duration in milliseconds (iX only, 0 = infinite)"
+
+[[commands.parameters]]
+name = "T"
+type = "int"
+required = false
+description = "Transition time in milliseconds"
+
+[[commands]]
+name = "M155"
+description_short = "Automatically send temperatures"
+description_long = "Set temperature auto-report interval."
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Interval in seconds"
+
+[[commands]]
 name = "M190"
-description_short = "Set bed temperature and wait"
+description_short = "Wait for bed temperature"
 description_long = "Set heated bed temperature and wait for it to reach target. Blocks until bed temperature is reached."
 
 [[commands.parameters]]
@@ -184,68 +1061,158 @@ name = "S"
 type = "int"
 required = true
 description = "Target bed temperature in Celsius"
+# ===== FILAMENT HANDLING =====
 
 [[commands]]
-name = "M106"
-description_short = "Set fan speed"
-description_long = "Set part cooling fan speed. Controls the print cooling fan, not the hotend fan."
+name = "M600"
+description_short = "Filament change pause"
+description_long = "Pause for filament change with configurable parameters."
 
 [[commands.parameters]]
-name = "S"
+name = "T"
 type = "int"
 required = false
-description = "Fan speed: 0-255 (0 = off, 255 = full speed)"
+description = "Select extruder for filament change"
+
+# ===== TOOLCHANGE COMMANDS =====
+
+[[commands]]
+name = "T0"
+description_short = "Select tool 0"
+description_long = "Select extruder/filament position 0. MMU3: slot 1, XL: tool 1."
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement feedrate"
+
+[[commands]]
+name = "T1"
+description_short = "Select tool 1"
+description_long = "Select extruder/filament position 1. MMU3: slot 2, XL: tool 2."
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement feedrate"
+
+[[commands]]
+name = "T2"
+description_short = "Select tool 2"
+description_long = "Select extruder/filament position 2. MMU3: slot 3, XL: tool 3."
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement feedrate"
+
+[[commands]]
+name = "T3"
+description_short = "Select tool 3"
+description_long = "Select extruder/filament position 3. MMU3: slot 4, XL: tool 4."
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement feedrate"
+
+[[commands]]
+name = "T4"
+description_short = "Select tool 4"
+description_long = "Select extruder/filament position 4. MMU3: slot 5, XL: tool 5."
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement feedrate"
+
+# ===== ADVANCED M-CODES =====
+
+[[commands]]
+name = "M701"
+description_short = "Load to nozzle"
+description_long = "Load filament to nozzle with MMU3 support."
 
 [[commands.parameters]]
 name = "P"
 type = "int"
 required = false
-description = "Fan index (default: 0)"
+description = "MMU slot index (0-4)"
 
 [[commands]]
-name = "M107"
-description_short = "Turn off fan"
-description_long = "Turn off the part cooling fan. Equivalent to M106 S0."
-
-[[commands]]
-name = "M82"
-description_short = "Absolute extruder mode"
-description_long = "Set extruder to absolute mode. E coordinates are interpreted as absolute positions."
-
-[[commands]]
-name = "M83"
-description_short = "Relative extruder mode"
-description_long = "Set extruder to relative mode. E coordinates are interpreted as relative to current extruder position."
-
-[[commands]]
-name = "G29"
-description_short = "Bed leveling"
-description_long = "Auto bed leveling. Probes the bed at multiple points to create a mesh for automatic bed leveling compensation."
+name = "M702"
+description_short = "Unload filament"
+description_long = "Unload filament with MMU3 support."
 
 [[commands.parameters]]
 name = "P"
 type = "int"
 required = false
-description = "Probing phase (Prusa specific)"
+description = "MMU slot index (0-4)"
 
 [[commands]]
-name = "M84"
-description_short = "Disable steppers"
-description_long = "Disable stepper motors after specified timeout or immediately. Reduces motor heat and power consumption."
+name = "M862"
+description_short = "Print checking"
+description_long = "Verify G-code compatibility with machine."
 
 [[commands.parameters]]
-name = "S"
-type = "int"
-required = false
-description = "Timeout in seconds before disabling motors"
-
-[[commands]]
-name = "M117"
-description_short = "Display message"
-description_long = "Display a message on the LCD screen. Useful for status updates during printing."
-
-[[commands.parameters]]
-name = "message"
+name = "P"
 type = "string"
-required = true
-description = "Message text to display"
+required = false
+description = "Check if supplied value matches machine"
+
+[[commands]]
+name = "M900"
+description_short = "Set linear advance K factor"
+description_long = "Set linear advance K factor for pressure compensation."
+
+[[commands.parameters]]
+name = "K"
+type = "float"
+required = false
+description = "Linear advance K factor"
+
+[[commands]]
+name = "M593"
+description_short = "Set input shaper parameters"
+description_long = "Configure input shaper for vibration compensation."
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Frequency in Hz (0 = disabled)"
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Apply to X axis only"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Apply to Y axis only"
+
+[[commands]]
+name = "M862.3"
+description_short = "Check model name"
+description_long = "Check if G-code is sliced for compatible printer model name."
+
+[[commands.parameters]]
+name = "P"
+type = "string"
+required = false
+description = "Model name to check"
+
+[[commands.parameters]]
+name = "Q"
+type = "bool"
+required = false
+description = "Query current model name"

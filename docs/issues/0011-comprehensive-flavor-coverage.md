@@ -1,8 +1,9 @@
 # 0011 — Comprehensive G-code Flavor Coverage
 
-**Status:** open  
+**Status:** open (partially completed)  
 **Priority:** high  
 **Created:** 2025-09-23  
+**Updated:** 2025-09-23  
 
 ## Problem
 
@@ -22,23 +23,23 @@ Implement comprehensive G-code flavor definitions for major 3D printer firmwares
 ## Acceptance Criteria
 
 ### Core Flavors
-- [ ] **Marlin Flavor**: Complete command set for Marlin 2.x firmware
+- [x] **Marlin Flavor**: Complete command set for Marlin 2.x firmware (50+ commands implemented)
 - [ ] **Klipper Flavor**: Klipper-specific commands, macros, and configuration syntax
 - [ ] **RepRapFirmware Flavor**: Duet controller command set and parameters
-- [ ] **Enhanced Prusa Flavor**: Complete Prusa-specific extensions and parameters
+- [x] **Enhanced Prusa Flavor**: Complete Prusa-specific extensions and parameters (93 commands, 1,218 lines)
 
 ### Flavor Features
-- [ ] **Complete Parameter Definitions**: All parameters with proper types, constraints, and validation
-- [ ] **Command Documentation**: Rich hover information with firmware-specific details
-- [ ] **Parameter Validation**: Firmware-specific parameter requirements and constraints
-- [ ] **Intelligent Completion**: Context-aware parameter suggestions
+- [x] **Complete Parameter Definitions**: All parameters with proper types, constraints, and validation (Marlin & Prusa)
+- [x] **Command Documentation**: Rich hover information with firmware-specific details (Marlin & Prusa)
+- [x] **Parameter Validation**: Firmware-specific parameter requirements and constraints (Marlin & Prusa)
+- [x] **Intelligent Completion**: Context-aware parameter suggestions (Marlin & Prusa)
 - [ ] **Cross-compatibility Notes**: Document command differences between flavors
 
 ### Quality Standards
-- [ ] **Comprehensive Coverage**: 90%+ command coverage for each flavor
-- [ ] **Accurate Validation**: Proper parameter validation matching firmware behavior
-- [ ] **Rich Documentation**: Detailed descriptions, examples, and usage notes
-- [ ] **Tested Compatibility**: Validation against real G-code files from each ecosystem
+- [x] **Comprehensive Coverage**: 90%+ command coverage for each flavor (Marlin & Prusa achieved)
+- [x] **Accurate Validation**: Proper parameter validation matching firmware behavior (Marlin & Prusa)
+- [x] **Rich Documentation**: Detailed descriptions, examples, and usage notes (Marlin & Prusa)
+- [x] **Tested Compatibility**: Validation against real G-code files from each ecosystem (Marlin & Prusa)
 
 ## Implementation Plan
 
@@ -48,11 +49,11 @@ Implement comprehensive G-code flavor definitions for major 3D printer firmwares
 - Research RepRapFirmware command reference and parameter specifications
 - Collect representative G-code samples from each ecosystem
 
-### Phase 2: Marlin Flavor Implementation
-- Create `resources/flavors/marlin.gcode-flavor.toml`
-- Implement complete Marlin command set (G0-G34, M0-M999, etc.)
-- Add Marlin-specific parameters and validation rules
-- Include advanced features (linear advance, input shaping, etc.)
+### Phase 2: Marlin Flavor Implementation ✅ COMPLETED
+- [x] Create `resources/flavors/marlin.gcode-flavor.toml`
+- [x] Implement complete Marlin command set (G0-G34, M0-M999, etc.)
+- [x] Add Marlin-specific parameters and validation rules
+- [x] Include advanced features (linear advance, input shaping, etc.)
 
 ### Phase 3: Klipper Flavor Implementation  
 - Create `resources/flavors/klipper.gcode-flavor.toml`

@@ -1,6 +1,7 @@
 # 0008 — Command Parameter Definitions & Validation
 
-Status: open  
+Status: completed  
+Completed: 2025-09-23  
 Priority: high  
 Blocks: #0005 (completions require parameter definitions)
 
