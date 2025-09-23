@@ -1,15 +1,26 @@
-# 0007 — Packaging, release, and Neovim integration notes
+# 0007 — Release Automation & Editor Integration Documentation
 
-Status: open
+Status: open  
+Updated: 2025-09-23
 
-Goal
-- Prepare packaging and documentation for editor integration (Neovim), including install instructions and a small CLI wrapper.
+## Completed ✅
+- ✅ CLI flags implemented (`--flavor`, `--flavor-dir`, `--log-level`, `--help`)
+- ✅ Single binary artifact builds successfully
+- ✅ LSP server runs correctly with Neovim
 
-Acceptance criteria
-- Release artifact (single binary) can be installed and run by Neovim LSP
-- README contains Neovim setup notes and sample `init.vim` or `lua` config
+## Remaining Goals
+Automate release process and provide comprehensive editor integration documentation.
 
-Tasks
-- [ ] Add CLI flags and help
-- [ ] Draft Neovim integration docs and examples
-- [ ] Create release packaging (GitHub Actions) to build artifacts
+## Acceptance Criteria
+- [ ] GitHub Actions workflow for automated releases
+- [ ] Cross-platform binary artifacts (Linux, macOS, Windows)
+- [ ] Comprehensive README with editor setup instructions
+- [ ] Neovim configuration examples (init.vim and lua)
+- [ ] VS Code extension configuration examples
+- [ ] Installation instructions for multiple platforms
+
+## Tasks
+- [ ] Create `.github/workflows/release.yml` for automated builds
+- [ ] Update README with installation and setup instructions
+- [ ] Create `docs/EDITOR_INTEGRATION.md` with configuration examples
+- [ ] Test release artifacts on different platforms

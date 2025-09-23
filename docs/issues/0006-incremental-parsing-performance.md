@@ -1,15 +1,17 @@
 # 0006 — Incremental parsing & performance for large files
 
-Status: open
+Status: closed  
+Closed: 2025-09-23  
+Superseded by: Issue 0010 (Performance Benchmarks & Optimization)
 
-Goal
-- Ensure the server can handle large files (target ~20 MB) with responsive edits using incremental parsing strategies.
+## Closure Reason
 
-Acceptance criteria
-- Edits result in near-instant diagnostics/response on typical machines
-- Memory usage remains bounded and reasonable
+This issue has been superseded by **Issue 0010 - Performance Benchmarks & Optimization**, which provides a more comprehensive approach to performance including:
 
-Tasks
-- [ ] Implement incremental parse of changed ranges
-- [ ] Add benchmarks and CI checks for performance
-- [ ] Optimize hotspot allocations
+- Systematic benchmarking of parsing performance on large files
+- Memory usage profiling and optimization
+- LSP operation performance measurement  
+- CI integration for performance regression detection
+- Concrete performance targets and success metrics
+
+The goals of this issue (handling large files, responsive edits, bounded memory) are all addressed in the new comprehensive performance framework.
