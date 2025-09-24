@@ -62,22 +62,16 @@ jobs:
     
     - name: Run parsing benchmarks
       if: ${{ github.event.inputs.benchmark_type == 'parsing' || github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == '' }}
-      run: |
-        cargo bench --bench parsing_benchmarks -- --output-format json > parsing_benchmark_results.json
-        cargo bench --bench parsing_benchmarks
-    
+      run: cargo bench --bench parsing_benchmarks
+
     - name: Run LSP benchmarks
       if: ${{ github.event.inputs.benchmark_type == 'lsp' || github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == '' }}
-      run: |
-        cargo bench --bench lsp_benchmarks -- --output-format json > lsp_benchmark_results.json
-        cargo bench --bench lsp_benchmarks
-    
+      run: cargo bench --bench lsp_benchmarks
+
     - name: Run validation benchmarks
       if: ${{ github.event.inputs.benchmark_type == 'validation' || github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == '' }}
-      run: |
-        cargo bench --bench validation_benchmarks -- --output-format json > validation_benchmark_results.json
-        cargo bench --bench validation_benchmarks
-    
+      run: cargo bench --bench validation_benchmarks
+
     - name: Generate benchmark summary
       run: |
         mkdir -p benchmark-results
