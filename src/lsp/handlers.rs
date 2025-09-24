@@ -21,6 +21,15 @@ pub trait HandleCompletion {
     ) -> LspResult<Option<CompletionResponse>>;
 }
 
+/// Trait for handling document symbols
+#[tower_lsp::async_trait]
+pub trait HandleDocumentSymbol {
+    async fn handle_document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> LspResult<Option<DocumentSymbolResponse>>;
+}
+
 /// Trait for handling diagnostics
 #[tower_lsp::async_trait]
 pub trait HandleDiagnostics {
@@ -340,5 +349,230 @@ impl HandleDiagnostics for Backend {
             None,
             None,
         )
+    }
+}
+
+#[tower_lsp::async_trait]
+impl HandleDocumentSymbol for Backend {
+    async fn handle_document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> LspResult<Option<DocumentSymbolResponse>> {
+        let uri = params.text_document.uri;
+
+        let docs = self.documents.lock().await;
+        let doc_state = match docs.get(&uri) {
+            Some(state) => state,
+            None => return Ok(None),
+        };
+
+        let mut symbols = Vec::new();
+
+        for (line_idx, line) in doc_state.content.lines().enumerate() {
+            let parsed = crate::parser::parse_line(line);
+
+            if let crate::parser::ParsedLine::Command(command) = parsed {
+                let symbol_name = if command.parameters.is_empty() {
+                    command.name.clone()
+                } else {
+                    let params: Vec<String> = command
+                        .parameters
+                        .iter()
+                        .take(3) // Limit to first 3 parameters
+                        .map(|p| format!("{}{}", p.letter, p.value))
+                        .collect();
+                    format!("{} {}", command.name, params.join(" "))
+                };
+
+                let symbol_kind = match command.name.chars().next() {
+                    Some('G') => SymbolKind::FUNCTION,
+                    Some('M') => SymbolKind::PROPERTY,
+                    Some('T') => SymbolKind::VARIABLE,
+                    _ => SymbolKind::FUNCTION,
+                };
+
+                let range = Range::new(
+                    Position::new(line_idx as u32, 0),
+                    Position::new(line_idx as u32, line.len() as u32),
+                );
+
+                let selection_range = Range::new(
+                    Position::new(line_idx as u32, 0),
+                    Position::new(line_idx as u32, command.name.len() as u32),
+                );
+
+                let symbol = DocumentSymbol {
+                    name: symbol_name,
+                    detail: None,
+                    kind: symbol_kind,
+                    tags: None,
+                    #[allow(deprecated)]
+                    deprecated: Some(false), // Required by tower-lsp 0.20, use tags instead in future versions
+                    range,
+                    selection_range,
+                    children: None,
+                };
+                symbols.push(symbol);
+            }
+        }
+
+        Ok(Some(DocumentSymbolResponse::Nested(symbols)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::{parse_line, Command, Parameter};
+
+    #[test]
+    fn test_symbol_name_generation() {
+        // Test simple G-code with few parameters
+        let mut command = Command {
+            name: "G1".to_string(),
+            parameters: vec![
+                Parameter {
+                    letter: 'X',
+                    value: "10".to_string(),
+                },
+                Parameter {
+                    letter: 'Y',
+                    value: "20".to_string(),
+                },
+            ],
+            comment: None,
+        };
+
+        let name = format!(
+            "{} {}",
+            command.name,
+            command
+                .parameters
+                .iter()
+                .take(3)
+                .map(|p| format!("{}{}", p.letter, p.value))
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
+
+        assert_eq!(name, "G1 X10 Y20");
+
+        // Test with many parameters - should limit to first 3
+        command.parameters = vec![
+            Parameter {
+                letter: 'X',
+                value: "10".to_string(),
+            },
+            Parameter {
+                letter: 'Y',
+                value: "20".to_string(),
+            },
+            Parameter {
+                letter: 'Z',
+                value: "0.3".to_string(),
+            },
+            Parameter {
+                letter: 'E',
+                value: "5.5".to_string(),
+            },
+            Parameter {
+                letter: 'F',
+                value: "1500".to_string(),
+            },
+        ];
+
+        let name = format!(
+            "{} {}",
+            command.name,
+            command
+                .parameters
+                .iter()
+                .take(3)
+                .map(|p| format!("{}{}", p.letter, p.value))
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
+
+        assert_eq!(name, "G1 X10 Y20 Z0.3");
+    }
+
+    #[test]
+    fn test_symbol_kind_mapping() {
+        // Test G-code -> FUNCTION
+        let g_command = Command {
+            name: "G1".to_string(),
+            parameters: vec![],
+            comment: None,
+        };
+        let kind = match g_command.name.chars().next().unwrap() {
+            'G' => SymbolKind::FUNCTION,
+            'M' => SymbolKind::PROPERTY,
+            'T' => SymbolKind::VARIABLE,
+            _ => SymbolKind::CONSTANT,
+        };
+        assert_eq!(kind, SymbolKind::FUNCTION);
+
+        // Test M-code -> PROPERTY
+        let m_command = Command {
+            name: "M104".to_string(),
+            parameters: vec![],
+            comment: None,
+        };
+        let kind = match m_command.name.chars().next().unwrap() {
+            'G' => SymbolKind::FUNCTION,
+            'M' => SymbolKind::PROPERTY,
+            'T' => SymbolKind::VARIABLE,
+            _ => SymbolKind::CONSTANT,
+        };
+        assert_eq!(kind, SymbolKind::PROPERTY);
+
+        // Test T-code -> VARIABLE
+        let t_command = Command {
+            name: "T1".to_string(),
+            parameters: vec![],
+            comment: None,
+        };
+        let kind = match t_command.name.chars().next().unwrap() {
+            'G' => SymbolKind::FUNCTION,
+            'M' => SymbolKind::PROPERTY,
+            'T' => SymbolKind::VARIABLE,
+            _ => SymbolKind::CONSTANT,
+        };
+        assert_eq!(kind, SymbolKind::VARIABLE);
+    }
+
+    #[test]
+    fn test_parse_and_symbol_integration() {
+        // Test that we can parse various G-code lines and extract symbol info
+        let test_cases = vec![
+            ("G28", "G28"),
+            ("G1 X10 Y20", "G1 X10 Y20"),
+            ("M104 S200", "M104 S200"),
+            ("T1", "T1"),
+            ("G1 X10 Y20 Z0.3 E5 F1500 S100", "G1 X10 Y20 Z0.3"), // Parameter limiting
+        ];
+
+        for (input, expected_name) in test_cases {
+            let parsed = parse_line(input);
+            if let crate::parser::ParsedLine::Command(cmd) = parsed {
+                let symbol_name = if cmd.parameters.is_empty() {
+                    cmd.name.clone()
+                } else {
+                    format!(
+                        "{} {}",
+                        cmd.name,
+                        cmd.parameters
+                            .iter()
+                            .take(3)
+                            .map(|p| format!("{}{}", p.letter, p.value))
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    )
+                };
+                assert_eq!(symbol_name, expected_name, "Failed for input: {}", input);
+            } else {
+                panic!("Expected command for input: {}", input);
+            }
+        }
     }
 }

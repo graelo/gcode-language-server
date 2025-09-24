@@ -7,7 +7,9 @@ use tower_lsp::{Client, LanguageServer};
 
 use crate::flavor::registry::FlavorRegistry;
 use crate::lsp::document::DocumentState;
-use crate::lsp::handlers::{HandleCompletion, HandleDiagnostics, HandleHover};
+use crate::lsp::handlers::{
+    HandleCompletion, HandleDiagnostics, HandleDocumentSymbol, HandleHover,
+};
 use crate::Config;
 
 /// The main LSP backend that holds state and implements the Language Server Protocol
@@ -51,6 +53,7 @@ impl LanguageServer for Backend {
                     all_commit_characters: None,
                     completion_item: None,
                 }),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
@@ -79,6 +82,13 @@ impl LanguageServer for Backend {
         params: CompletionParams,
     ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         self.handle_completion(params).await
+    }
+
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<DocumentSymbolResponse>> {
+        self.handle_document_symbol(params).await
     }
 
     // Store opened documents for hover/diagnostics
