@@ -252,7 +252,7 @@ fn bench_position_based_operations(c: &mut Criterion) {
 
 /// Benchmark concurrent parsing (simulating multiple LSP requests)
 fn bench_concurrent_operations(c: &mut Criterion) {
-    let test_lines = vec![
+    let test_lines = [
         "G1 X10 Y20 F1500",
         "M104 S210",
         "G28",

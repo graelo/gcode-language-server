@@ -1,0 +1,976 @@
+# Klipper G-code Flavor Definition
+# Based on Klipper 3D printer firmware G-code commands
+# Reference: https://www.klipper3d.org/G-Codes.html
+
+[flavor]
+name = "klipper"
+version = "2024.1"
+description = "Klipper 3D printer firmware G-code commands with macro system support"
+
+# ============================================================================
+# STANDARD G-CODE COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "G0"
+description_short = "Linear Move (rapid)"
+description_long = "Rapid linear move to specified coordinates"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X axis position"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y axis position"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z axis position"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder position"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement speed in mm/min"
+
+[[commands]]
+name = "G1"
+description_short = "Linear Move"
+description_long = "Linear move to specified coordinates"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X axis position"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y axis position"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z axis position"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder position"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement speed in mm/min"
+
+[[commands.constraints]]
+type = "require_any_of" 
+parameters = ["X", "Y", "Z", "E"]
+message = "G1 requires at least one axis parameter (X, Y, Z, or E)"
+
+# Arc Movement Commands (with gcode_arcs support)
+[[commands]]
+name = "G2"
+description_short = "Arc Move Clockwise"
+description_long = "Clockwise arc move (requires gcode_arcs config section)"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "End X position"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "End Y position"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "End Z position"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder amount"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement speed"
+
+[[commands.parameters]]
+name = "I"
+type = "float"
+required = false
+description = "X offset to arc center"
+
+[[commands.parameters]]
+name = "J"
+type = "float"
+required = false
+description = "Y offset to arc center"
+
+[[commands.parameters]]
+name = "K"
+type = "float"
+required = false
+description = "Z offset to arc center"
+
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["I", "J", "K"]
+message = "G2 arc move requires arc center offset (I, J, or K)"
+
+[[commands]]
+name = "G3"
+description_short = "Arc Move Counter-clockwise"
+description_long = "Counter-clockwise arc move (requires gcode_arcs config section)"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "End X position"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "End Y position"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false 
+description = "End Z position"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Extruder amount"
+
+[[commands.parameters]]
+name = "F"
+type = "float"
+required = false
+description = "Movement speed"
+
+[[commands.parameters]]
+name = "I"
+type = "float"
+required = false
+description = "X offset to arc center"
+
+[[commands.parameters]]
+name = "J"
+type = "float"
+required = false
+description = "Y offset to arc center"
+
+[[commands.parameters]]
+name = "K"
+type = "float"
+required = false
+description = "Z offset to arc center"
+
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["I", "J", "K"]
+message = "G3 arc move requires arc center offset (I, J, or K)"
+
+# Arc Plane Selection
+[[commands]]
+name = "G17"
+description_short = "Select XY Plane"
+description_long = "Select XY plane for arc moves"
+
+[[commands]]
+name = "G18"
+description_short = "Select XZ Plane"
+description_long = "Select XZ plane for arc moves"
+
+[[commands]]
+name = "G19"
+description_short = "Select YZ Plane"
+description_long = "Select YZ plane for arc moves"
+
+# Dwell
+[[commands]]
+name = "G4"
+description_short = "Dwell"
+description_long = "Pause for specified time"
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = true
+description = "Dwell time in milliseconds"
+
+# Homing
+[[commands]]
+name = "G28"
+description_short = "Move to Origin (Home)"
+description_long = "Home specified axes or all axes if no parameters given"
+
+[[commands.parameters]]
+name = "X"
+type = "bool"
+required = false
+description = "Home X axis"
+
+[[commands.parameters]]
+name = "Y"
+type = "bool"
+required = false
+description = "Home Y axis"
+
+[[commands.parameters]]
+name = "Z"
+type = "bool"
+required = false
+description = "Home Z axis"
+
+# Coordinate System
+[[commands]]
+name = "G90"
+description_short = "Absolute Positioning"
+description_long = "Set absolute coordinate mode"
+
+[[commands]]
+name = "G91"
+description_short = "Relative Positioning"
+description_long = "Set relative coordinate mode"
+
+[[commands]]
+name = "G92"
+description_short = "Set Position"
+description_long = "Set current position to specified coordinates"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "Set current X position"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Set current Y position"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Set current Z position"
+
+[[commands.parameters]]
+name = "E"
+type = "float"
+required = false
+description = "Set current extruder position"
+
+# ============================================================================
+# TEMPERATURE COMMANDS (M104-M190)
+# ============================================================================
+
+[[commands]]
+name = "M104"
+description_short = "Set Extruder Temperature"
+description_long = "Set extruder target temperature"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = false
+description = "Target temperature in Celsius"
+
+[[commands.parameters]]
+name = "T"
+type = "int"
+required = false
+description = "Extruder index"
+
+[[commands]]
+name = "M105"
+description_short = "Get Temperature"
+description_long = "Get current extruder and bed temperatures"
+
+[[commands]]
+name = "M109"
+description_short = "Set Extruder Temperature and Wait"
+description_long = "Set extruder temperature and wait for it to be reached"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = true
+description = "Target temperature in Celsius"
+
+[[commands.parameters]]
+name = "T"
+type = "int"
+required = false
+description = "Extruder index"
+
+[[commands]]
+name = "M140"
+description_short = "Set Bed Temperature"
+description_long = "Set bed target temperature"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = false
+description = "Target bed temperature in Celsius"
+
+[[commands]]
+name = "M190"
+description_short = "Set Bed Temperature and Wait"
+description_long = "Set bed temperature and wait for it to be reached"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = true
+description = "Target bed temperature in Celsius"
+
+# ============================================================================
+# FAN COMMANDS (M106-M107)
+# ============================================================================
+
+[[commands]]
+name = "M106"
+description_short = "Set Fan Speed"
+description_long = "Set part cooling fan speed"
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = false
+description = "Fan speed (0-255)"
+
+[[commands]]
+name = "M107"
+description_short = "Turn Fan Off"
+description_long = "Turn off part cooling fan"
+
+# ============================================================================
+# MOTOR COMMANDS (M18, M84)
+# ============================================================================
+
+[[commands]]
+name = "M18"
+description_short = "Disable Motors"
+description_long = "Disable stepper motors"
+
+[[commands]]
+name = "M84"
+description_short = "Disable Motors"
+description_long = "Disable stepper motors (alias for M18)"
+
+# ============================================================================
+# EXTRUDER MODE (M82, M83)
+# ============================================================================
+
+[[commands]]
+name = "M82"
+description_short = "Absolute Extrusion Mode"
+description_long = "Set extruder to absolute distance mode"
+
+[[commands]]
+name = "M83"
+description_short = "Relative Extrusion Mode"
+description_long = "Set extruder to relative distance mode"
+
+# ============================================================================
+# STATUS COMMANDS (M114, M115)
+# ============================================================================
+
+[[commands]]
+name = "M114"
+description_short = "Get Current Position"
+description_long = "Report current position"
+
+[[commands]]
+name = "M115"
+description_short = "Get Firmware Version" 
+description_long = "Get firmware version and capabilities"
+
+# ============================================================================
+# EMERGENCY AND CONTROL (M112, M400)
+# ============================================================================
+
+[[commands]]
+name = "M112"
+description_short = "Emergency Stop"
+description_long = "Emergency stop - halt all movement immediately"
+
+[[commands]]
+name = "M400"
+description_short = "Wait for Movement to Finish"
+description_long = "Wait for all moves to complete"
+
+# ============================================================================
+# OVERRIDE COMMANDS (M220, M221)
+# ============================================================================
+
+[[commands]]
+name = "M220"
+description_short = "Set Speed Factor Override"
+description_long = "Set speed factor override percentage"
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Speed factor percentage"
+
+[[commands]]
+name = "M221"
+description_short = "Set Extrude Factor Override"
+description_long = "Set extrude factor override percentage"
+
+[[commands.parameters]]
+name = "S"
+type = "int"
+required = true
+description = "Extrude factor percentage"
+
+# ============================================================================
+# ACCELERATION AND DISPLAY (M204, M117, M73)
+# ============================================================================
+
+[[commands]]
+name = "M204"
+description_short = "Set Acceleration"
+description_long = "Set default acceleration"
+
+[[commands.parameters]]
+name = "S"
+type = "float"
+required = false
+description = "Default acceleration"
+
+[[commands.parameters]]
+name = "P"
+type = "float"
+required = false
+description = "Print acceleration"
+
+[[commands.parameters]]
+name = "T"
+type = "float"
+required = false
+description = "Travel acceleration"
+
+[[commands]]
+name = "M117"
+description_short = "Display Message"
+description_long = "Display message on LCD screen"
+
+[[commands.parameters]]
+name = "message"
+type = "string"
+required = false
+description = "Message to display"
+
+[[commands]]
+name = "M73"
+description_short = "Set Build Progress"
+description_long = "Set print progress percentage for display"
+
+[[commands.parameters]]
+name = "P"
+type = "int"
+required = false
+description = "Progress percentage (0-100)"
+
+# ============================================================================
+# KLIPPER EXTENDED COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "RESTART"
+description_short = "Restart Klipper"
+description_long = "Restart Klipper host software"
+
+[[commands]]
+name = "FIRMWARE_RESTART"
+description_short = "Firmware Restart"
+description_long = "Restart and clear MCU error state"
+
+[[commands]]
+name = "STATUS"
+description_short = "Report Status"
+description_long = "Report Klipper host software status"
+
+[[commands]]
+name = "HELP"
+description_short = "List Commands"
+description_long = "List available extended G-code commands"
+
+[[commands]]
+name = "SAVE_CONFIG"
+description_short = "Save Configuration"
+description_long = "Save configuration changes and restart"
+
+# ============================================================================
+# TEMPERATURE CONTROL
+# ============================================================================
+
+[[commands]]
+name = "TURN_OFF_HEATERS"
+description_short = "Turn Off All Heaters"
+description_long = "Turn off all heaters"
+
+[[commands]]
+name = "SET_HEATER_TEMPERATURE"
+description_short = "Set Heater Temperature"
+description_long = "Set target temperature for specified heater"
+
+[[commands.parameters]]
+name = "HEATER"
+type = "string"
+required = true
+description = "Heater name"
+
+[[commands.parameters]]
+name = "TARGET"
+type = "float"
+required = false
+description = "Target temperature"
+
+[[commands]]
+name = "TEMPERATURE_WAIT"
+description_short = "Wait for Temperature"
+description_long = "Wait for temperature sensor to reach target"
+
+[[commands.parameters]]
+name = "SENSOR"
+type = "string"
+required = true
+description = "Temperature sensor name"
+
+[[commands.parameters]]
+name = "MINIMUM"
+type = "float"
+required = false
+description = "Minimum temperature"
+
+[[commands.parameters]]
+name = "MAXIMUM"
+type = "float"
+required = false
+description = "Maximum temperature"
+
+# ============================================================================
+# MOVEMENT COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "GET_POSITION"
+description_short = "Get Position"
+description_long = "Get detailed position information"
+
+[[commands]]
+name = "SET_GCODE_OFFSET"
+description_short = "Set G-code Offset"
+description_long = "Set positional offset for future moves"
+
+[[commands.parameters]]
+name = "X"
+type = "float"
+required = false
+description = "X offset"
+
+[[commands.parameters]]
+name = "Y"
+type = "float"
+required = false
+description = "Y offset"
+
+[[commands.parameters]]
+name = "Z"
+type = "float"
+required = false
+description = "Z offset"
+
+[[commands.parameters]]
+name = "X_ADJUST"
+type = "float"
+required = false
+description = "X adjustment to existing offset"
+
+[[commands.parameters]]
+name = "Y_ADJUST"
+type = "float"
+required = false
+description = "Y adjustment to existing offset"
+
+[[commands.parameters]]
+name = "Z_ADJUST"
+type = "float"
+required = false
+description = "Z adjustment to existing offset"
+
+[[commands.parameters]]
+name = "MOVE"
+type = "int"
+required = false
+description = "Apply offset with move (1=yes, 0=no)"
+
+[[commands.parameters]]
+name = "MOVE_SPEED"
+type = "float"
+required = false
+description = "Speed for offset move"
+
+[[commands]]
+name = "SAVE_GCODE_STATE"
+description_short = "Save G-code State"
+description_long = "Save current G-code parsing state"
+
+[[commands.parameters]]
+name = "NAME"
+type = "string"
+required = false
+description = "State name (default: 'default')"
+
+[[commands]]
+name = "RESTORE_GCODE_STATE"
+description_short = "Restore G-code State"
+description_long = "Restore previously saved G-code state"
+
+[[commands.parameters]]
+name = "NAME"
+type = "string"
+required = false
+description = "State name to restore"
+
+[[commands.parameters]]
+name = "MOVE"
+type = "int"
+required = false
+description = "Move to saved position (1=yes, 0=no)"
+
+[[commands.parameters]]
+name = "MOVE_SPEED"
+type = "float"
+required = false
+description = "Speed for restore move"
+
+# ============================================================================
+# PROBE COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "PROBE"
+description_short = "Probe Bed"
+description_long = "Probe current position on bed"
+
+[[commands.parameters]]
+name = "PROBE_SPEED"
+type = "float"
+required = false
+description = "Probing speed"
+
+[[commands.parameters]]
+name = "LIFT_SPEED"
+type = "float"
+required = false
+description = "Lift speed after probe"
+
+[[commands.parameters]]
+name = "SAMPLES"
+type = "int"
+required = false
+description = "Number of samples"
+
+[[commands.parameters]]
+name = "SAMPLE_RETRACT_DIST"
+type = "float"
+required = false
+description = "Retract distance between samples"
+
+[[commands]]
+name = "QUERY_PROBE"
+description_short = "Query Probe Status"
+description_long = "Report current probe trigger status"
+
+[[commands]]
+name = "PROBE_CALIBRATE"
+description_short = "Probe Calibration"
+description_long = "Start probe Z offset calibration"
+
+[[commands.parameters]]
+name = "SPEED"
+type = "float"
+required = false
+description = "Manual move speed"
+
+[[commands]]
+name = "PROBE_ACCURACY"
+description_short = "Probe Accuracy Test"
+description_long = "Test probe accuracy with multiple samples"
+
+[[commands.parameters]]
+name = "PROBE_SPEED"
+type = "float"
+required = false
+description = "Probing speed"
+
+[[commands.parameters]]
+name = "SAMPLES"
+type = "int"
+required = false
+description = "Number of samples (default: 10)"
+
+[[commands.parameters]]
+name = "SAMPLE_RETRACT_DIST"
+type = "float"
+required = false
+description = "Retract distance"
+
+# ============================================================================
+# BED MESH COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "BED_MESH_CALIBRATE"
+description_short = "Bed Mesh Calibration"
+description_long = "Calibrate bed mesh with probe"
+
+[[commands.parameters]]
+name = "PROFILE"
+type = "string"
+required = false
+description = "Mesh profile name"
+
+[[commands.parameters]]
+name = "METHOD"
+type = "string"
+required = false
+description = "Calibration method (manual/auto)"
+
+[[commands.parameters]]
+name = "ADAPTIVE"
+type = "int"
+required = false
+description = "Adaptive meshing (1=yes, 0=no)"
+
+[[commands.parameters]]
+name = "ADAPTIVE_MARGIN"
+type = "float"
+required = false
+description = "Adaptive mesh margin"
+
+[[commands]]  
+name = "BED_MESH_PROFILE"
+description_short = "Bed Mesh Profile Management"
+description_long = "Load, save, or remove bed mesh profiles"
+
+[[commands.parameters]]
+name = "LOAD"
+type = "string"
+required = false
+description = "Profile name to load"
+
+[[commands.parameters]]
+name = "SAVE"
+type = "string"
+required = false
+description = "Profile name to save"
+
+[[commands.parameters]]
+name = "REMOVE"
+type = "string"
+required = false
+description = "Profile name to remove"
+
+[[commands]]
+name = "BED_MESH_CLEAR"
+description_short = "Clear Bed Mesh"
+description_long = "Clear current bed mesh"
+
+[[commands]]
+name = "BED_MESH_OUTPUT"
+description_short = "Output Bed Mesh"
+description_long = "Output current bed mesh to terminal"
+
+[[commands.parameters]]
+name = "PGP"
+type = "int"
+required = false
+description = "Include coordinates (1=yes, 0=no)"
+
+# ============================================================================
+# EXTRUDER COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "ACTIVATE_EXTRUDER"
+description_short = "Activate Extruder"
+description_long = "Set active extruder"
+
+[[commands.parameters]]
+name = "EXTRUDER"
+type = "string"
+required = true
+description = "Extruder config name"
+
+# ============================================================================
+# MACRO SYSTEM COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "SET_GCODE_VARIABLE"
+description_short = "Set Macro Variable"
+description_long = "Set value of gcode_macro variable"
+
+[[commands.parameters]]
+name = "MACRO"
+type = "string"
+required = true
+description = "Macro name"
+
+[[commands.parameters]]
+name = "VARIABLE"
+type = "string"
+required = true
+description = "Variable name"
+
+[[commands.parameters]]
+name = "VALUE"
+type = "string"
+required = true
+description = "Variable value (parsed as Python literal)"
+
+# ============================================================================
+# PRINT CONTROL
+# ============================================================================
+
+[[commands]]
+name = "PAUSE"
+description_short = "Pause Print"
+description_long = "Pause current print"
+
+[[commands]]
+name = "RESUME"
+description_short = "Resume Print"
+description_long = "Resume paused print"
+
+[[commands.parameters]]
+name = "VELOCITY"
+type = "float"
+required = false
+description = "Return move velocity"
+
+[[commands]]
+name = "CANCEL_PRINT"
+description_short = "Cancel Print"
+description_long = "Cancel current print"
+
+[[commands]]
+name = "CLEAR_PAUSE"
+description_short = "Clear Pause State"
+description_long = "Clear paused state without resuming"
+
+# ============================================================================
+# QUERY COMMANDS
+# ============================================================================
+
+[[commands]]
+name = "QUERY_ENDSTOPS"
+description_short = "Query Endstops"
+description_long = "Report current endstop status"
+
+[[commands]]
+name = "QUERY_ADC"
+description_short = "Query ADC"
+description_long = "Report ADC values"
+
+[[commands.parameters]]
+name = "NAME"
+type = "string"
+required = false
+description = "ADC config name"
+
+[[commands.parameters]]
+name = "PULLUP"
+type = "float"
+required = false
+description = "Pullup resistance value"
+
+# ============================================================================
+# FIRMWARE RETRACTION
+# ============================================================================
+
+[[commands]]
+name = "G10"
+description_short = "Retract"
+description_long = "Retract filament using firmware retraction settings"
+
+[[commands]]
+name = "G11"
+description_short = "Unretract"
+description_long = "Unretract filament using firmware retraction settings"
+
+[[commands]]
+name = "SET_RETRACTION"
+description_short = "Set Retraction Parameters"
+description_long = "Configure firmware retraction settings"
+
+[[commands.parameters]]
+name = "RETRACT_LENGTH"
+type = "float"
+required = false
+description = "Retraction length in mm"
+
+[[commands.parameters]]
+name = "RETRACT_SPEED"
+type = "float"
+required = false
+description = "Retraction speed in mm/s"
+
+[[commands.parameters]]
+name = "UNRETRACT_EXTRA_LENGTH"
+type = "float"
+required = false
+description = "Extra unretract length"
+
+[[commands.parameters]]
+name = "UNRETRACT_SPEED"
+type = "float"
+required = false
+description = "Unretraction speed in mm/s"
+
+[[commands]]
+name = "GET_RETRACTION"
+description_short = "Get Retraction Parameters"
+description_long = "Report current firmware retraction settings"

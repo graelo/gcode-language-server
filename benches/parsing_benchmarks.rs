@@ -174,7 +174,7 @@ fn bench_real_files(c: &mut Criterion) {
     for file_path in fixture_files {
         if let Ok(content) = fs::read_to_string(file_path) {
             let lines: Vec<&str> = content.lines().collect();
-            let file_name = file_path.split('/').last().unwrap_or("unknown");
+            let file_name = file_path.split('/').next_back().unwrap_or("unknown");
             let byte_size = content.len();
 
             group.throughput(Throughput::Bytes(byte_size as u64));

@@ -106,7 +106,22 @@ fn validate_command(
 ) {
     // Check if command exists in the active flavor
     if let Some(command_def) = flavor.get_command(&cmd.name) {
-        // Command exists, validate parameters
+        // Command exists, validate parameters and constraints
+        
+        // Validate parameter constraints (independent of parameter definitions)
+        let cmd_param_names: Vec<String> = cmd
+            .parameters
+            .iter()
+            .map(|p| p.letter.to_string().to_uppercase())
+            .collect();
+        
+        let constraint_errors = command_def.validate_constraints(&cmd_param_names);
+        
+        for error in constraint_errors {
+            result.add_error(line_num, error);
+        }
+        
+        // Validate individual parameters if they're defined
         if let Some(expected_params) = &command_def.parameters {
             // Check for required parameters
             for expected_param in expected_params {
@@ -124,21 +139,6 @@ fn validate_command(
                             ),
                         );
                     }
-                }
-            }
-
-            // Special validation for movement commands (G0, G1) - require at least one coordinate
-            if cmd.name == "G0" || cmd.name == "G1" {
-                let has_coordinate = cmd.parameters.iter().any(|p| {
-                    let param_name = p.letter.to_string().to_uppercase();
-                    param_name == "X" || param_name == "Y" || param_name == "Z"
-                });
-
-                if !has_coordinate {
-                    result.add_error(
-                        line_num,
-                        format!("Movement command '{}' requires at least one coordinate parameter (X, Y, or Z)", cmd.name),
-                    );
                 }
             }
 
@@ -185,5 +185,90 @@ mod tests {
         let registry = FlavorRegistry::new(); // Will implement this
         let result = validate_line(1, &ParsedLine::Empty, &registry);
         assert!(result.is_valid());
+    }
+
+    #[test]
+    fn test_constraint_validation() {
+        use crate::flavor::schema::{CommandDef, ParameterConstraint, ConstraintType};
+        use crate::parser::{Command, Parameter};
+
+        // Create a mock flavor registry with constraint-enabled G0 command
+        let mut registry = FlavorRegistry::new();
+        let mut commands = std::collections::HashMap::new();
+        
+        let g0_cmd = CommandDef {
+            name: "G0".to_string(),
+            description_short: Some("Rapid positioning".to_string()),
+            description_long: None,
+            parameters: None,
+            constraints: Some(vec![ParameterConstraint {
+                constraint_type: ConstraintType::RequireAnyOf,
+                parameters: vec!["X".to_string(), "Y".to_string(), "Z".to_string()],
+                message: Some("Movement command requires at least one coordinate parameter (X, Y, or Z)".to_string()),
+            }]),
+        };
+        
+        commands.insert("G0".to_string(), g0_cmd);
+        
+        let flavor = crate::flavor::schema::Flavor {
+            name: "test".to_string(),
+            version: None,
+            description: None,
+            commands,
+        };
+        
+        registry.add_flavor(flavor);
+        registry.set_active_flavor("test");
+
+        // Test 1: Valid G0 command with X parameter
+        let valid_cmd = Command {
+            name: "G0".to_string(),
+            parameters: vec![Parameter {
+                letter: 'X',
+                value: "10.0".to_string(),
+            }],
+            comment: None,
+        };
+        
+        let mut result = ValidationResult::new();
+        validate_command(1, &valid_cmd, &registry, &mut result);
+        assert!(result.is_valid(), "G0 with X parameter should be valid");
+
+        // Test 2: Invalid G0 command with no coordinates (only F parameter)
+        let invalid_cmd = Command {
+            name: "G0".to_string(),
+            parameters: vec![Parameter {
+                letter: 'F',
+                value: "1000.0".to_string(),
+            }],
+            comment: None,
+        };
+        
+        let mut result = ValidationResult::new();
+        validate_command(1, &invalid_cmd, &registry, &mut result);
+        
+        assert!(!result.is_valid(), "G0 without coordinates should be invalid");
+        assert_eq!(result.diagnostics.len(), 1);
+        assert!(result.diagnostics[0].message.contains("requires at least one coordinate"));
+
+        // Test 3: Valid G0 command with multiple coordinates
+        let valid_multi_cmd = Command {
+            name: "G0".to_string(),
+            parameters: vec![
+                Parameter {
+                    letter: 'X',
+                    value: "10.0".to_string(),
+                },
+                Parameter {
+                    letter: 'Y',
+                    value: "20.0".to_string(),
+                },
+            ],
+            comment: None,
+        };
+        
+        let mut result = ValidationResult::new();
+        validate_command(1, &valid_multi_cmd, &registry, &mut result);
+        assert!(result.is_valid(), "G0 with multiple coordinates should be valid");
     }
 }

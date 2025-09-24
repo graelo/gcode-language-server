@@ -34,6 +34,11 @@ type = "float"
 required = false
 description = "Feed rate (movement speed)"
 
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["X", "Y", "Z"]
+message = "Movement command requires at least one coordinate parameter (X, Y, or Z)"
+
 [[commands]]
 name = "G1"
 description_short = "Linear move"
@@ -68,6 +73,11 @@ name = "F"
 type = "float"
 required = false
 description = "Feed rate (movement speed)"
+
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["X", "Y", "Z"]
+message = "Movement command requires at least one coordinate parameter (X, Y, or Z)"
 
 [[commands]]
 name = "G2"
@@ -110,6 +120,12 @@ type = "float"
 required = false
 description = "Feed rate"
 
+# Arc commands typically require at least one coordinate and arc definition
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["X", "Y", "I", "J"]
+message = "Arc command requires at least coordinates or center offset parameters"
+
 [[commands]]
 name = "G3"
 description_short = "Counter-clockwise arc move"
@@ -150,6 +166,12 @@ name = "F"
 type = "float"
 required = false
 description = "Feed rate"
+
+# Arc commands typically require at least one coordinate and arc definition
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["X", "Y", "I", "J"]
+message = "Arc command requires at least coordinates or center offset parameters"
 
 [[commands]]
 name = "G4"

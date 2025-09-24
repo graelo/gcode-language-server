@@ -36,6 +36,7 @@ pub struct CommandDef {
     pub description_short: Option<String>,
     pub description_long: Option<String>,
     pub parameters: Option<Vec<ParameterDef>>,
+    pub constraints: Option<Vec<ParameterConstraint>>,
 }
 
 /// Command parameter definition
@@ -67,6 +68,24 @@ pub struct ParameterConstraints {
     pub min_value: Option<f64>,
     pub max_value: Option<f64>,
     pub enum_values: Option<Vec<String>>,
+}
+
+/// Parameter constraint for command-level validation
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct ParameterConstraint {
+    #[serde(rename = "type")]
+    pub constraint_type: ConstraintType,
+    pub parameters: Vec<String>,
+    pub message: Option<String>,
+}
+
+/// Types of parameter constraints
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ConstraintType {
+    RequireAnyOf,
+    RequireAllOf,
+    MutuallyExclusive,
 }
 
 impl From<FlavorFile> for Flavor {
@@ -102,6 +121,84 @@ impl CommandDef {
             .as_ref()
             .map(|params| params.iter().filter(|p| p.required).collect())
             .unwrap_or_default()
+    }
+
+    /// Validate parameter constraints for a command
+    pub fn validate_constraints(&self, cmd_parameters: &[String]) -> Vec<String> {
+        let mut errors = Vec::new();
+
+        if let Some(constraints) = &self.constraints {
+            for constraint in constraints {
+                match constraint.constraint_type {
+                    ConstraintType::RequireAnyOf => {
+                        let has_any = constraint.parameters.iter().any(|param_name| {
+                            cmd_parameters
+                                .iter()
+                                .any(|p| p.to_uppercase() == *param_name)
+                        });
+
+                        if !has_any {
+                            let message = constraint.message.as_deref().unwrap_or(
+                                "Command requires at least one of the specified parameters",
+                            );
+                            errors.push(format!(
+                                "{}: {}",
+                                message,
+                                constraint.parameters.join(", ")
+                            ));
+                        }
+                    }
+                    ConstraintType::RequireAllOf => {
+                        let missing: Vec<_> = constraint
+                            .parameters
+                            .iter()
+                            .filter(|param_name| {
+                                !cmd_parameters
+                                    .iter()
+                                    .any(|p| p.to_uppercase() == **param_name)
+                            })
+                            .collect();
+
+                        if !missing.is_empty() {
+                            let message = constraint
+                                .message
+                                .as_deref()
+                                .unwrap_or("Command requires all of the specified parameters");
+                            let missing_names: Vec<&str> =
+                                missing.iter().map(|s| s.as_str()).collect();
+                            errors.push(format!(
+                                "{}: missing {}",
+                                message,
+                                missing_names.join(", ")
+                            ));
+                        }
+                    }
+                    ConstraintType::MutuallyExclusive => {
+                        let present_params: Vec<_> = constraint
+                            .parameters
+                            .iter()
+                            .filter(|param_name| {
+                                cmd_parameters
+                                    .iter()
+                                    .any(|p| p.to_uppercase() == **param_name)
+                            })
+                            .collect();
+
+                        if present_params.len() > 1 {
+                            let message = constraint
+                                .message
+                                .as_deref()
+                                .unwrap_or("Parameters are mutually exclusive");
+                            let present_names: Vec<&str> =
+                                present_params.iter().map(|s| s.as_str()).collect();
+                            errors.push(format!("{}: {}", message, present_names.join(", ")));
+                        }
+                    }
+                }
+            }
+        }
+
+        errors
     }
 }
 
@@ -220,6 +317,7 @@ mod tests {
                 description_short: Some("Linear move".to_string()),
                 description_long: None,
                 parameters: None,
+                constraints: None,
             }],
         };
 
@@ -281,9 +379,113 @@ mod tests {
                 constraints: None,
                 aliases: None,
             }]),
+            constraints: None,
         };
 
         assert!(cmd.find_parameter("X").is_some());
         assert!(cmd.find_parameter("Y").is_none());
+    }
+
+    #[test]
+    fn test_require_any_of_constraint() {
+        let cmd = CommandDef {
+            name: "G0".to_string(),
+            description_short: None,
+            description_long: None,
+            parameters: None,
+            constraints: Some(vec![ParameterConstraint {
+                constraint_type: ConstraintType::RequireAnyOf,
+                parameters: vec!["X".to_string(), "Y".to_string(), "Z".to_string()],
+                message: Some("Movement requires at least one coordinate".to_string()),
+            }]),
+        };
+
+        // Test success - has X parameter
+        let errors = cmd.validate_constraints(&["X".to_string(), "F".to_string()]);
+        assert!(errors.is_empty());
+
+        // Test failure - no coordinate parameters
+        let errors = cmd.validate_constraints(&["F".to_string(), "S".to_string()]);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].contains("Movement requires at least one coordinate"));
+    }
+
+    #[test]
+    fn test_require_all_of_constraint() {
+        let cmd = CommandDef {
+            name: "G2".to_string(),
+            description_short: None,
+            description_long: None,
+            parameters: None,
+            constraints: Some(vec![ParameterConstraint {
+                constraint_type: ConstraintType::RequireAllOf,
+                parameters: vec!["I".to_string(), "J".to_string()],
+                message: Some("Arc commands require both I and J".to_string()),
+            }]),
+        };
+
+        // Test success - has both I and J
+        let errors = cmd.validate_constraints(&["I".to_string(), "J".to_string(), "X".to_string()]);
+        assert!(errors.is_empty());
+
+        // Test failure - missing J
+        let errors = cmd.validate_constraints(&["I".to_string(), "X".to_string()]);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].contains("Arc commands require both I and J"));
+        assert!(errors[0].contains("missing J"));
+    }
+
+    #[test]
+    fn test_mutually_exclusive_constraint() {
+        let cmd = CommandDef {
+            name: "G90".to_string(),
+            description_short: None,
+            description_long: None,
+            parameters: None,
+            constraints: Some(vec![ParameterConstraint {
+                constraint_type: ConstraintType::MutuallyExclusive,
+                parameters: vec!["ABS".to_string(), "REL".to_string()],
+                message: Some("Cannot specify both absolute and relative modes".to_string()),
+            }]),
+        };
+
+        // Test success - only one mode
+        let errors = cmd.validate_constraints(&["ABS".to_string()]);
+        assert!(errors.is_empty());
+
+        // Test failure - both modes specified
+        let errors = cmd.validate_constraints(&["ABS".to_string(), "REL".to_string()]);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].contains("Cannot specify both absolute and relative modes"));
+    }
+
+    #[test]
+    fn test_multiple_constraints() {
+        let cmd = CommandDef {
+            name: "G1".to_string(),
+            description_short: None,
+            description_long: None,
+            parameters: None,
+            constraints: Some(vec![
+                ParameterConstraint {
+                    constraint_type: ConstraintType::RequireAnyOf,
+                    parameters: vec!["X".to_string(), "Y".to_string(), "Z".to_string()],
+                    message: Some("Movement requires coordinate".to_string()),
+                },
+                ParameterConstraint {
+                    constraint_type: ConstraintType::MutuallyExclusive,
+                    parameters: vec!["S".to_string(), "F".to_string()],
+                    message: Some("Cannot specify both S and F".to_string()),
+                },
+            ]),
+        };
+
+        // Test success - satisfies both constraints
+        let errors = cmd.validate_constraints(&["X".to_string(), "S".to_string()]);
+        assert!(errors.is_empty());
+
+        // Test failure - violates both constraints
+        let errors = cmd.validate_constraints(&["S".to_string(), "F".to_string()]);
+        assert_eq!(errors.len(), 2); // Both constraints fail
     }
 }

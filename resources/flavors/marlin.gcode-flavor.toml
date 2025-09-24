@@ -46,6 +46,11 @@ type = "float"
 required = false
 description = "Feed rate (mm/min)"
 
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["X", "Y", "Z"]
+message = "Movement command requires at least one coordinate parameter (X, Y, or Z)"
+
 [[commands]]
 name = "G1"
 description_short = "Linear move"
@@ -80,6 +85,11 @@ name = "F"
 type = "float"
 required = false
 description = "Feed rate (mm/min)"
+
+[[commands.constraints]]
+type = "require_any_of"
+parameters = ["X", "Y", "Z"]
+message = "Movement command requires at least one coordinate parameter (X, Y, or Z)"
 
 [[commands]]
 name = "G2"
@@ -134,6 +144,20 @@ type = "float"
 required = false
 description = "Feed rate (mm/min)"
 
+# Arc command constraints based on Marlin documentation
+# I J Form: At least one of I or J is required when not using R
+# R Form: X or Y is required when using R  
+# Mixing R with I or J will throw an error
+[[commands.constraints]]
+type = "mutually_exclusive"
+parameters = ["R", "I"]
+message = "Cannot mix radius (R) with center offset (I) - use either R form or I,J form"
+
+[[commands.constraints]]
+type = "mutually_exclusive" 
+parameters = ["R", "J"]
+message = "Cannot mix radius (R) with center offset (J) - use either R form or I,J form"
+
 [[commands]]
 name = "G3"
 description_short = "Counter-clockwise arc move"
@@ -186,6 +210,17 @@ name = "F"
 type = "float"
 required = false
 description = "Feed rate (mm/min)"
+
+# Arc command constraints based on Marlin documentation (same as G2)
+[[commands.constraints]]
+type = "mutually_exclusive"
+parameters = ["R", "I"]
+message = "Cannot mix radius (R) with center offset (I) - use either R form or I,J form"
+
+[[commands.constraints]]
+type = "mutually_exclusive" 
+parameters = ["R", "J"]
+message = "Cannot mix radius (R) with center offset (J) - use either R form or I,J form"
 
 [[commands]]
 name = "G4"

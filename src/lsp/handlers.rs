@@ -207,7 +207,7 @@ impl HandleCompletion for Backend {
                     });
                 }
             }
-        } else if words.len() >= 1 && is_after_space {
+        } else if !words.is_empty() && is_after_space {
             // Completing parameters for a command (cursor is after a space following the command)
             let command_name = words[0].to_uppercase();
             if let Some(command_def) = active_flavor.commands.get(&command_name) {

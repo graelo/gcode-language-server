@@ -61,10 +61,10 @@ impl FlavorRegistry {
     /// Add comprehensive embedded Prusa flavor with rich command definitions
     pub fn add_embedded_prusa_flavor(&mut self) {
         use crate::flavor::schema::{Flavor, FlavorFile};
-        
+
         // Load embedded TOML content
         let embedded_toml = include_str!("../../resources/flavors/prusa.gcode-flavor.toml");
-        
+
         // Parse the embedded TOML into a FlavorFile
         match toml::from_str::<FlavorFile>(embedded_toml) {
             Ok(flavor_file) => {
@@ -73,7 +73,10 @@ impl FlavorRegistry {
             }
             Err(e) => {
                 // Fallback to minimal flavor if parsing fails
-                log::warn!("Failed to parse embedded Prusa flavor: {}. Using minimal fallback.", e);
+                log::warn!(
+                    "Failed to parse embedded Prusa flavor: {}. Using minimal fallback.",
+                    e
+                );
                 self.add_minimal_prusa_flavor();
             }
         }
@@ -91,8 +94,11 @@ impl FlavorRegistry {
             CommandDef {
                 name: "G0".to_string(),
                 description_short: Some("Rapid positioning".to_string()),
-                description_long: Some("Move to position at rapid rate without extrusion".to_string()),
+                description_long: Some(
+                    "Move to position at rapid rate without extrusion".to_string(),
+                ),
                 parameters: None,
+                constraints: None,
             },
         );
 
@@ -103,6 +109,7 @@ impl FlavorRegistry {
                 description_short: Some("Linear move".to_string()),
                 description_long: Some("Linear move with extrusion".to_string()),
                 parameters: None,
+                constraints: None,
             },
         );
 
@@ -216,6 +223,7 @@ mod tests {
                 description_short: Some("Linear move".to_string()),
                 description_long: None,
                 parameters: None,
+                constraints: None,
             }],
         };
         let flavor = Flavor::from(file);
