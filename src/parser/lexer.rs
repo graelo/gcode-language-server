@@ -22,7 +22,7 @@ pub struct Token {
 }
 
 /// Tokenize a line of GCode into tokens
-/// 
+///
 /// This is much simpler than the current approach - no position tracking,
 /// no streaming, just fast extraction of tokens from a line.
 pub fn tokenize_line(line: &str) -> Vec<Token> {
@@ -75,10 +75,11 @@ pub fn tokenize_line(line: &str) -> Vec<Token> {
 
                 // Consume alphanumeric, dots, minus, plus
                 while let Some(&(idx, next_ch)) = chars.peek() {
-                    if next_ch.is_ascii_alphanumeric() 
-                        || next_ch == '.' 
-                        || next_ch == '-' 
-                        || next_ch == '+' {
+                    if next_ch.is_ascii_alphanumeric()
+                        || next_ch == '.'
+                        || next_ch == '-'
+                        || next_ch == '+'
+                    {
                         end_idx = idx + 1;
                         chars.next();
                     } else {
@@ -87,7 +88,7 @@ pub fn tokenize_line(line: &str) -> Vec<Token> {
                 }
 
                 let text = line[start_idx..end_idx].to_string();
-                
+
                 // Simple heuristic: Commands start with G, M, T
                 let kind = if is_command(&text) {
                     TokenKind::Command
@@ -107,7 +108,7 @@ pub fn tokenize_line(line: &str) -> Vec<Token> {
 }
 
 /// Determine if a token is a command
-/// 
+///
 /// Simple heuristic: G/M/T codes are commands, everything else is parameter.
 /// This works for 99% of GCode and is much simpler than complex pattern matching.
 fn is_command(text: &str) -> bool {
@@ -125,7 +126,7 @@ mod tests {
     #[test]
     fn test_tokenize_simple_command() {
         let tokens = tokenize_line("G1 X10 Y20");
-        
+
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].kind, TokenKind::Command);
         assert_eq!(tokens[0].text, "G1");
@@ -138,7 +139,7 @@ mod tests {
     #[test]
     fn test_tokenize_with_semicolon_comment() {
         let tokens = tokenize_line("G1 X10 ; move to X10");
-        
+
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[2].kind, TokenKind::Comment);
         assert_eq!(tokens[2].text, "; move to X10");
@@ -147,7 +148,7 @@ mod tests {
     #[test]
     fn test_tokenize_paren_comment() {
         let tokens = tokenize_line("G1 (rapid move) X10");
-        
+
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[1].kind, TokenKind::Comment);
         assert_eq!(tokens[1].text, "(rapid move)");
@@ -156,7 +157,7 @@ mod tests {
     #[test]
     fn test_tokenize_comment_only() {
         let tokens = tokenize_line("; this is a comment");
-        
+
         assert_eq!(tokens.len(), 1);
         assert_eq!(tokens[0].kind, TokenKind::Comment);
         assert_eq!(tokens[0].text, "; this is a comment");
@@ -180,7 +181,7 @@ mod tests {
     #[test]
     fn test_float_parameters() {
         let tokens = tokenize_line("G1 X10.5 Y-2.3 Z+1.0");
-        
+
         assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[1].text, "X10.5");
         assert_eq!(tokens[2].text, "Y-2.3");
