@@ -8,3 +8,4 @@ target/
 memory-bank/
 CLAUDE.md
 AGENTS.md
+.claude/
