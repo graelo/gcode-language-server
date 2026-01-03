@@ -5,6 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+    types: [ labeled ]
   workflow_dispatch:
     inputs:
       benchmark_type:
@@ -25,6 +26,11 @@ jobs:
   benchmark:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
+    # Run on push to main/develop, manual dispatch, or when 'run-benchmarks' label is added to PR
+    if: >
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'run-benchmarks')
     
     steps:
     - uses: actions/checkout@v4
@@ -200,7 +206,7 @@ jobs:
     name: Performance Regression Detection
     runs-on: ubuntu-latest
     needs: benchmark
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.label.name == 'run-benchmarks'
     
     steps:
     - name: Download benchmark results
