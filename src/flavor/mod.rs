@@ -2,8 +2,8 @@
 //!
 //! Simplified flavor management without the over-engineering.
 
-pub mod schema;
 pub mod registry;
+pub mod schema;
 
-pub use schema::{Flavor, CommandDef, ParameterDef};
 pub use registry::FlavorRegistry;
+pub use schema::{CommandDef, Flavor, ParameterDef};

@@ -5,5 +5,7 @@ target/
 .vscode/
 .idea/
 
-memory.json
-.continue/
+memory-bank/
+CLAUDE.md
+AGENTS.md
+.claude/

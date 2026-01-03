@@ -4,8 +4,8 @@ use std::path::Path;
 use tokio::io::{stdin, stdout};
 use tower_lsp::{LspService, Server};
 
-use crate::lsp::backend::Backend;
 use crate::flavor::registry::FlavorRegistry;
+use crate::lsp::backend::Backend;
 use crate::Config;
 
 /// Start the LSP server
@@ -15,9 +15,11 @@ pub async fn serve() -> Result<()> {
     // Initialize flavor registry with embedded Prusa flavor
     let mut flavor_registry = FlavorRegistry::new();
     flavor_registry.add_embedded_prusa_flavor();
-    
+
     // Set active flavor from config or default to "prusa"
-    let active_flavor = config.get_effective_flavor().unwrap_or_else(|| "prusa".to_string());
+    let active_flavor = config
+        .get_effective_flavor()
+        .unwrap_or_else(|| "prusa".to_string());
     flavor_registry.set_active_flavor(&active_flavor);
 
     // Write embedded flavor to user's config directory for easy access
@@ -25,7 +27,9 @@ pub async fn serve() -> Result<()> {
         log::warn!("Failed to write embedded flavor to disk: {}", e);
     }
 
-    let (service, socket) = LspService::build(move |client| Backend::new(client, config.clone(), flavor_registry)).finish();
+    let (service, socket) =
+        LspService::build(move |client| Backend::new(client, config.clone(), flavor_registry))
+            .finish();
 
     Server::new(stdin(), stdout(), socket).serve(service).await;
 

@@ -366,12 +366,16 @@ impl HandleDocumentSymbol for Backend {
             None => return Ok(None),
         };
 
+        // Get flavor registry for enhanced symbol details
+        let flavor_registry = self.flavor_registry.lock().await;
+
         let mut symbols = Vec::new();
 
         for (line_idx, line) in doc_state.content.lines().enumerate() {
             let parsed = crate::parser::parse_line(line);
 
             if let crate::parser::ParsedLine::Command(command) = parsed {
+                // Generate basic symbol name (command + first 3 parameters)
                 let symbol_name = if command.parameters.is_empty() {
                     command.name.clone()
                 } else {
@@ -383,6 +387,42 @@ impl HandleDocumentSymbol for Backend {
                         .collect();
                     format!("{} {}", command.name, params.join(" "))
                 };
+
+                // Enhanced symbol detail using flavor registry
+                let symbol_detail = flavor_registry.get_command(&command.name).map(|cmd_def| {
+                    let mut detail = cmd_def
+                        .description_short
+                        .clone()
+                        .unwrap_or_else(|| "G-code command".to_string());
+
+                    // Add parameter documentation for parameters present in this command
+                    if !command.parameters.is_empty() {
+                        if let Some(flavor_params) = &cmd_def.parameters {
+                            let mut param_docs = Vec::new();
+
+                            // Match actual parameters with flavor definitions
+                            for param in &command.parameters {
+                                let param_upper = param.letter.to_uppercase().to_string();
+                                if let Some(flavor_param) = flavor_params
+                                    .iter()
+                                    .find(|fp| fp.name.to_uppercase() == param_upper)
+                                {
+                                    param_docs.push(format!(
+                                        "{}: {}",
+                                        param.letter, flavor_param.description
+                                    ));
+                                }
+                            }
+
+                            if !param_docs.is_empty() {
+                                detail.push_str(" | ");
+                                detail.push_str(&param_docs.join(", "));
+                            }
+                        }
+                    }
+
+                    detail
+                });
 
                 let symbol_kind = match command.name.chars().next() {
                     Some('G') => SymbolKind::FUNCTION,
@@ -403,7 +443,7 @@ impl HandleDocumentSymbol for Backend {
 
                 let symbol = DocumentSymbol {
                     name: symbol_name,
-                    detail: None,
+                    detail: symbol_detail,
                     kind: symbol_kind,
                     tags: None,
                     #[allow(deprecated)]
@@ -573,6 +613,152 @@ mod tests {
             } else {
                 panic!("Expected command for input: {}", input);
             }
+        }
+    }
+
+    #[test]
+    fn test_flavor_integration_in_symbol_details() {
+        // Test the flavor integration logic used in Document Symbols
+        use crate::flavor::registry::FlavorRegistry;
+
+        // Create a flavor registry with Prusa flavor loaded
+        let mut registry = FlavorRegistry::new();
+        registry.add_embedded_prusa_flavor();
+        assert!(
+            registry.set_active_flavor("prusa"),
+            "Should set Prusa flavor"
+        );
+
+        // Test G1 command with parameters (should get enhanced detail)
+        let parsed_g1 = crate::parser::parse_line("G1 X10 Y20 F1500");
+        if let crate::parser::ParsedLine::Command(command) = parsed_g1 {
+            // This replicates the logic from handle_document_symbol
+            let symbol_detail = registry.get_command(&command.name).map(|cmd_def| {
+                let mut detail = cmd_def
+                    .description_short
+                    .clone()
+                    .unwrap_or_else(|| "G-code command".to_string());
+
+                // Add parameter documentation for parameters present in this command
+                if !command.parameters.is_empty() {
+                    if let Some(flavor_params) = &cmd_def.parameters {
+                        let mut param_docs = Vec::new();
+
+                        // Match actual parameters with flavor definitions
+                        for param in &command.parameters {
+                            let param_upper = param.letter.to_uppercase().to_string();
+                            if let Some(flavor_param) = flavor_params
+                                .iter()
+                                .find(|fp| fp.name.to_uppercase() == param_upper)
+                            {
+                                param_docs.push(format!(
+                                    "{}: {}",
+                                    param.letter, flavor_param.description
+                                ));
+                            }
+                        }
+
+                        if !param_docs.is_empty() {
+                            detail.push_str(" | ");
+                            detail.push_str(&param_docs.join(", "));
+                        }
+                    }
+                }
+
+                detail
+            });
+
+            assert!(symbol_detail.is_some(), "G1 should have detail from flavor");
+            let detail = symbol_detail.unwrap();
+            assert!(
+                detail.contains("Linear move"),
+                "Should contain flavor description"
+            );
+            assert!(
+                detail.contains("X: X coordinate") || detail.contains("coordinate"),
+                "Should contain parameter documentation"
+            );
+        } else {
+            panic!("Expected G1 to be parsed as command");
+        }
+
+        // Test command without flavor definition (fallback case)
+        let symbol_detail_none = registry.get_command("UNKNOWN123").map(|cmd_def| {
+            cmd_def
+                .description_short
+                .clone()
+                .unwrap_or_else(|| "G-code command".to_string())
+        });
+        assert!(
+            symbol_detail_none.is_none(),
+            "Unknown command should have no detail"
+        );
+    }
+
+    #[test]
+    fn test_fallback_without_flavor_definition() {
+        // Test that symbol detail generation works gracefully when command is not in flavor registry
+        use crate::flavor::registry::FlavorRegistry;
+
+        // Create empty flavor registry (no command definitions)
+        let registry = FlavorRegistry::new();
+
+        // Test unknown G-code command (should return None)
+        let parsed_unknown = crate::parser::parse_line("G999 X10");
+        if let crate::parser::ParsedLine::Command(command) = parsed_unknown {
+            let symbol_detail = registry.get_command(&command.name).map(|cmd_def| {
+                cmd_def
+                    .description_short
+                    .clone()
+                    .unwrap_or_else(|| "G-code command".to_string())
+            });
+
+            assert!(
+                symbol_detail.is_none(),
+                "Unknown G-code command should have no detail"
+            );
+        } else {
+            panic!("Expected G999 to be parsed as command");
+        }
+
+        // Test G1 without flavor (should return None)
+        let parsed_g1 = crate::parser::parse_line("G1 Y20");
+        if let crate::parser::ParsedLine::Command(command) = parsed_g1 {
+            let symbol_detail = registry.get_command(&command.name).map(|cmd_def| {
+                cmd_def
+                    .description_short
+                    .clone()
+                    .unwrap_or_else(|| "G-code command".to_string())
+            });
+
+            assert!(
+                symbol_detail.is_none(),
+                "G1 without flavor should have no detail"
+            );
+        } else {
+            panic!("Expected G1 to be parsed as command");
+        }
+
+        // Verify that the symbol name generation still works without flavor info
+        if let crate::parser::ParsedLine::Command(command) =
+            crate::parser::parse_line("G1 X10 Y20 Z0.3")
+        {
+            let symbol_name = if command.parameters.is_empty() {
+                command.name.clone()
+            } else {
+                let params: Vec<String> = command
+                    .parameters
+                    .iter()
+                    .take(3) // Limit to first 3 parameters
+                    .map(|p| format!("{}{}", p.letter, p.value))
+                    .collect();
+                format!("{} {}", command.name, params.join(" "))
+            };
+
+            assert_eq!(
+                symbol_name, "G1 X10 Y20 Z0.3",
+                "Symbol name should work without flavor"
+            );
         }
     }
 }

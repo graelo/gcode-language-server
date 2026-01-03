@@ -15,15 +15,18 @@ fn document_symbols_basic() {
     let init_request = create_initialize_request();
     send_lsp_message(&mut server, &init_request);
 
-    // Read initialization response and continue with full workflow  
-    let stdout = server.stdout.take().expect("Child stdout should be available");
+    // Read initialization response and continue with full workflow
+    let stdout = server
+        .stdout
+        .take()
+        .expect("Child stdout should be available");
     let mut reader = BufReader::new(stdout);
-    
+
     // Read init response
     let content_length = read_content_length_header(&mut reader);
     let body = read_message_body(&mut reader, content_length);
     let init_response: Value = serde_json::from_str(&body).expect("Valid JSON response");
-    
+
     // Validate that document symbol capability is advertised
     validate_document_symbol_capability(&init_response);
 
@@ -66,7 +69,7 @@ fn document_symbols_basic() {
 
     // Read symbols response (may need to skip log messages)
     let symbols_response = read_next_response_with_id(&mut reader, 2);
-    
+
     validate_symbols_response(&symbols_response, sample_gcode);
 
     // Clean shutdown
@@ -82,9 +85,12 @@ fn document_symbols_empty_file() {
     send_lsp_message(&mut server, &init_request);
 
     // Read initialization response
-    let stdout = server.stdout.take().expect("Child stdout should be available");
+    let stdout = server
+        .stdout
+        .take()
+        .expect("Child stdout should be available");
     let mut reader = BufReader::new(stdout);
-    
+
     let content_length = read_content_length_header(&mut reader);
     let body = read_message_body(&mut reader, content_length);
     let _init_response: Value = serde_json::from_str(&body).expect("Valid JSON response");
@@ -127,12 +133,14 @@ fn document_symbols_empty_file() {
 
     // Read symbols response
     let symbols_response = read_next_response_with_id(&mut reader, 2);
-    
+
     // Validate empty response
     assert_eq!(symbols_response.get("jsonrpc").unwrap(), "2.0");
     assert_eq!(symbols_response.get("id").unwrap(), 2);
-    
-    let result = symbols_response.get("result").expect("Response should have result");
+
+    let result = symbols_response
+        .get("result")
+        .expect("Response should have result");
     let symbols = result.as_array().expect("Result should be an array");
     assert!(symbols.is_empty(), "Empty file should have no symbols");
 
@@ -232,20 +240,23 @@ fn read_message_body(
     String::from_utf8(body_bytes).expect("Response body should be valid UTF-8")
 }
 
-fn read_next_response_with_id(reader: &mut BufReader<std::process::ChildStdout>, expected_id: u64) -> Value {
+fn read_next_response_with_id(
+    reader: &mut BufReader<std::process::ChildStdout>,
+    expected_id: u64,
+) -> Value {
     // Keep reading responses until we find one with the expected id
     loop {
         let content_length = read_content_length_header(reader);
         let body = read_message_body(reader, content_length);
         let response: Value = serde_json::from_str(&body).expect("Valid JSON response");
-        
+
         // Check if this is the response we're looking for
         if let Some(id) = response.get("id") {
             if id.as_u64() == Some(expected_id) {
                 return response;
             }
         }
-        
+
         // Otherwise, this might be a notification/log message, skip it
     }
 }
@@ -267,30 +278,54 @@ fn validate_document_symbol_capability(response: &Value) {
 fn validate_symbols_response(response: &Value, _original_text: &str) {
     assert_eq!(response.get("jsonrpc").unwrap(), "2.0");
     assert_eq!(response.get("id").unwrap(), 2);
-    
+
     let result = response.get("result").expect("Response should have result");
-    
+
     // Should be an array of symbols
     let symbols = result.as_array().expect("Result should be an array");
-    
+
     // Should have at least 3 symbols (G28, M104, G1) from our test file
-    assert!(symbols.len() >= 3, "Should have at least 3 symbols, got {}", symbols.len());
-    
+    assert!(
+        symbols.len() >= 3,
+        "Should have at least 3 symbols, got {}",
+        symbols.len()
+    );
+
     // Check first symbol (G28)
     let first_symbol = &symbols[0];
     let name = first_symbol.get("name").unwrap().as_str().unwrap();
-    assert!(name.contains("G28"), "First symbol should be G28, got {}", name);
-    
+    assert!(
+        name.contains("G28"),
+        "First symbol should be G28, got {}",
+        name
+    );
+
     // Check that symbols have required fields
-    assert!(first_symbol.get("kind").is_some(), "Symbol should have kind");
-    assert!(first_symbol.get("range").is_some(), "Symbol should have range");
-    assert!(first_symbol.get("selectionRange").is_some(), "Symbol should have selectionRange");
-    
-    println!("✓ Document symbols test passed with {} symbols", symbols.len());
+    assert!(
+        first_symbol.get("kind").is_some(),
+        "Symbol should have kind"
+    );
+    assert!(
+        first_symbol.get("range").is_some(),
+        "Symbol should have range"
+    );
+    assert!(
+        first_symbol.get("selectionRange").is_some(),
+        "Symbol should have selectionRange"
+    );
+
+    println!(
+        "✓ Document symbols test passed with {} symbols",
+        symbols.len()
+    );
     for symbol in symbols {
         let name = symbol.get("name").unwrap().as_str().unwrap();
         let kind = symbol.get("kind").unwrap().as_u64().unwrap();
-        println!("  Symbol: {} (kind: {})", name, kind);
+        let detail = symbol
+            .get("detail")
+            .and_then(|d| d.as_str())
+            .unwrap_or("No detail");
+        println!("  Symbol: {} (kind: {}) - {}", name, kind, detail);
     }
 }
 
