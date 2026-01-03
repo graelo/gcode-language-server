@@ -31,13 +31,67 @@ cargo build --release
 ./target/release/gcode-ls --help
 ```
 
-## Usage
+## Editor Setup
 
-### With Neovim
+### Neovim
 
-Add to your LSP configuration:
+#### 1. Filetype Detection
+
+Add to `~/.config/nvim/filetype.lua`:
 
 ```lua
+vim.filetype.add({
+  extension = {
+    gcode = 'gcode',
+    nc = 'gcode',
+    ngc = 'gcode',
+  },
+})
+```
+
+#### 2. LSP Configuration
+
+Add to your LSP configuration (e.g., `~/.config/nvim/lua/plugins/lsp.lua`):
+
+```lua
+local lspconfig = require('lspconfig')
+local configs = require('lspconfig.configs')
+
+-- Register gcode-ls as a custom LSP server
+if not configs.gcode_ls then
+  configs.gcode_ls = {
+    default_config = {
+      cmd = { 'gcode-ls' },
+      filetypes = { 'gcode' },
+      root_dir = lspconfig.util.find_git_ancestor,
+      single_file_support = true,
+    },
+  }
+end
+
+-- Setup with options
+lspconfig.gcode_ls.setup({
+  cmd = { 'gcode-ls', '--flavor=prusa' },  -- or marlin, klipper
+  on_attach = function(client, bufnr)
+    -- Keymaps
+    local opts = { buffer = bufnr, silent = true }
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+    vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
+  end,
+})
+```
+
+#### 3. Minimal Setup (init.vim)
+
+For users preferring Vimscript:
+
+```vim
+" ~/.config/nvim/init.vim
+autocmd BufRead,BufNewFile *.gcode,*.nc,*.ngc setfiletype gcode
+
+lua << EOF
 local lspconfig = require('lspconfig')
 local configs = require('lspconfig.configs')
 
@@ -46,13 +100,28 @@ configs.gcode_ls = {
     cmd = { 'gcode-ls' },
     filetypes = { 'gcode' },
     root_dir = lspconfig.util.find_git_ancestor,
+    single_file_support = true,
   },
 }
 
 lspconfig.gcode_ls.setup{}
+EOF
 ```
 
-### CLI Options
+### VS Code
+
+Create `.vscode/settings.json` in your workspace:
+
+```json
+{
+  "gcode-ls.flavor": "prusa",
+  "gcode-ls.logLevel": "info"
+}
+```
+
+> Note: A VS Code extension is planned but not yet available.
+
+## CLI Options
 
 ```bash
 gcode-ls [OPTIONS]
