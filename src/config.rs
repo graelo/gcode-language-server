@@ -45,7 +45,11 @@ pub struct Config {
 impl Config {
     /// Create configuration from command-line arguments
     pub fn from_args_and_env() -> Result<Self> {
-        let args = Args::parse();
+        Self::from_args(Args::parse())
+    }
+
+    /// Create configuration from explicit arguments (useful for testing)
+    pub fn from_args(args: Args) -> Result<Self> {
 
         // Determine flavor directories
         let mut flavor_dirs = Vec::new();
