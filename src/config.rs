@@ -50,7 +50,6 @@ impl Config {
 
     /// Create configuration from explicit arguments (useful for testing)
     pub fn from_args(args: Args) -> Result<Self> {
-
         // Determine flavor directories
         let mut flavor_dirs = Vec::new();
 
