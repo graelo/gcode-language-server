@@ -17,7 +17,7 @@ pub mod parser;
 pub mod validation;
 
 // Re-exports for clean public API
-pub use config::Config;
+pub use config::{Args, Config};
 pub use flavor::{Flavor, FlavorRegistry};
 pub use parser::{parse_line, ParsedLine};
 pub use validation::{validate_document, Diagnostic};
