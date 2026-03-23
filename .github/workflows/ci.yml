@@ -218,14 +218,22 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v8
 
+      - name: Download convco
+        run: |
+          curl -sSfLO https://github.com/convco/convco/releases/latest/download/convco-ubuntu.zip
+          unzip convco-ubuntu.zip
+          chmod +x convco
+
+      - name: Use convco to create the changelog
+        run: |
+          ./convco changelog --max-versions 1 > CHANGELOG.md
+          rm convco convco-ubuntu.zip
+
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: |
+          artifacts: |
             **/*.tar.gz
             **/*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          bodyFile: 'CHANGELOG.md'
+          token: ${{ secrets.GITHUB_TOKEN }}
