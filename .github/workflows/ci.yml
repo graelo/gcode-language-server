@@ -180,21 +180,21 @@ jobs:
       - name: Copy binaries (Windows)
         if: runner.os == 'Windows'
         run: |
-          copy target\${{ matrix.target }}\release\gcode-ls.exe artifacts\
-          copy README.md artifacts\
-          copy LICENSE artifacts\
+          copy target/${{ matrix.target }}/release/gcode-ls.exe artifacts/
+          copy README.md artifacts/
+          copy LICENSE artifacts/
 
       - name: Create archive (Unix)
         if: runner.os != 'Windows'
         run: |
           cd artifacts
-          tar -czf ../${{ matrix.artifact_name }}.tar.gz *
+          tar -czf ../${{ matrix.artifact_name }}.tar.gz -- *
 
       - name: Create archive (Windows)
         if: runner.os == 'Windows'
         run: |
           cd artifacts
-          7z a ../${{ matrix.artifact_name }}.zip *
+          7z a ../${{ matrix.artifact_name }}.zip -- *
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
