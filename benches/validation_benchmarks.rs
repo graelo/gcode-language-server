@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use gcode_language_server::{validate_document, FlavorRegistry};
+use std::hint::black_box;
 
 /// Generate test content with specific validation scenarios
 fn generate_validation_content(lines: usize, scenario: &str) -> Vec<String> {
