@@ -1,6 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use gcode_language_server::{parse_line, ParsedLine};
 use std::fs;
+use std::hint::black_box;
 
 /// Generate G-code content of different patterns for benchmarking
 fn generate_gcode_content(lines: usize, pattern: &str) -> String {

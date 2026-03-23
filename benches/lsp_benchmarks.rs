@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use gcode_language_server::{parse_line, validate_document, FlavorRegistry};
+use std::hint::black_box;
 
 /// Generate G-code documents of different sizes for LSP benchmarking
 fn generate_document(lines: usize, pattern: &str) -> String {
