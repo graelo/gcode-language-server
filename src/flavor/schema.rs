@@ -227,21 +227,21 @@ impl ParameterDef {
                 // Check constraints (convert to float for comparison)
                 if let Some(constraints) = &self.constraints {
                     let val_f = val as f64;
-                    if let Some(min) = constraints.min_value {
-                        if val_f < min {
-                            return Err(format!(
-                                "Parameter '{}' value {} below minimum {}",
-                                self.name, val, min
-                            ));
-                        }
+                    if let Some(min) = constraints.min_value
+                        && val_f < min
+                    {
+                        return Err(format!(
+                            "Parameter '{}' value {} below minimum {}",
+                            self.name, val, min
+                        ));
                     }
-                    if let Some(max) = constraints.max_value {
-                        if val_f > max {
-                            return Err(format!(
-                                "Parameter '{}' value {} exceeds maximum {}",
-                                self.name, val, max
-                            ));
-                        }
+                    if let Some(max) = constraints.max_value
+                        && val_f > max
+                    {
+                        return Err(format!(
+                            "Parameter '{}' value {} exceeds maximum {}",
+                            self.name, val, max
+                        ));
                     }
                 }
             }
@@ -252,37 +252,36 @@ impl ParameterDef {
 
                 // Check constraints
                 if let Some(constraints) = &self.constraints {
-                    if let Some(min) = constraints.min_value {
-                        if val < min {
-                            return Err(format!(
-                                "Parameter '{}' value {} below minimum {}",
-                                self.name, val, min
-                            ));
-                        }
+                    if let Some(min) = constraints.min_value
+                        && val < min
+                    {
+                        return Err(format!(
+                            "Parameter '{}' value {} below minimum {}",
+                            self.name, val, min
+                        ));
                     }
-                    if let Some(max) = constraints.max_value {
-                        if val > max {
-                            return Err(format!(
-                                "Parameter '{}' value {} exceeds maximum {}",
-                                self.name, val, max
-                            ));
-                        }
+                    if let Some(max) = constraints.max_value
+                        && val > max
+                    {
+                        return Err(format!(
+                            "Parameter '{}' value {} exceeds maximum {}",
+                            self.name, val, max
+                        ));
                     }
                 }
             }
             ParameterType::String => {
                 // Check enum constraints
-                if let Some(constraints) = &self.constraints {
-                    if let Some(enum_values) = &constraints.enum_values {
-                        if !enum_values.iter().any(|v| v.eq_ignore_ascii_case(value)) {
-                            return Err(format!(
-                                "Parameter '{}' value '{}' not in allowed values: {}",
-                                self.name,
-                                value,
-                                enum_values.join(", ")
-                            ));
-                        }
-                    }
+                if let Some(constraints) = &self.constraints
+                    && let Some(enum_values) = &constraints.enum_values
+                    && !enum_values.iter().any(|v| v.eq_ignore_ascii_case(value))
+                {
+                    return Err(format!(
+                        "Parameter '{}' value '{}' not in allowed values: {}",
+                        self.name,
+                        value,
+                        enum_values.join(", ")
+                    ));
                 }
             }
             ParameterType::Bool => {

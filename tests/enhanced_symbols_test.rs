@@ -220,10 +220,10 @@ fn read_next_response_with_id(
         let message: serde_json::Value = serde_json::from_str(&body).expect("Valid JSON");
 
         // Skip log messages and notifications, return only responses with matching ID
-        if let Some(id) = message.get("id") {
-            if id.as_u64() == Some(expected_id) {
-                return message;
-            }
+        if let Some(id) = message.get("id")
+            && id.as_u64() == Some(expected_id)
+        {
+            return message;
         }
         // Continue reading if this was a log message or different response
     }

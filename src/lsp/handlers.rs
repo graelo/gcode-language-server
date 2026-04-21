@@ -98,22 +98,22 @@ impl HandleHover for Backend {
             // Enhance hover with parameter information
             let mut hover_text = format!("**{}**\n\n{}", token_up, desc);
 
-            if let Some(parameters) = &cmd.parameters {
-                if !parameters.is_empty() {
-                    hover_text.push_str("\n\n**Parameters:**");
-                    for param in parameters {
-                        hover_text.push_str(&format!(
-                            "\n- `{}`: {} ({:?}{})",
-                            param.name,
-                            param.description,
-                            param.param_type,
-                            if param.required {
-                                ", required"
-                            } else {
-                                ", optional"
-                            }
-                        ));
-                    }
+            if let Some(parameters) = &cmd.parameters
+                && !parameters.is_empty()
+            {
+                hover_text.push_str("\n\n**Parameters:**");
+                for param in parameters {
+                    hover_text.push_str(&format!(
+                        "\n- `{}`: {} ({:?}{})",
+                        param.name,
+                        param.description,
+                        param.param_type,
+                        if param.required {
+                            ", required"
+                        } else {
+                            ", optional"
+                        }
+                    ));
                 }
             }
 
@@ -185,22 +185,22 @@ impl HandleCompletion for Backend {
                         .unwrap_or_else(|| "G-code command".to_string());
 
                     // Add parameter information to documentation
-                    if let Some(parameters) = &command_def.parameters {
-                        if !parameters.is_empty() {
-                            documentation.push_str("\n\n**Parameters:**");
-                            for param in parameters {
-                                documentation.push_str(&format!(
-                                    "\n- `{}`: {} ({:?}{})",
-                                    param.name,
-                                    param.description,
-                                    param.param_type,
-                                    if param.required {
-                                        ", required"
-                                    } else {
-                                        ", optional"
-                                    }
-                                ));
-                            }
+                    if let Some(parameters) = &command_def.parameters
+                        && !parameters.is_empty()
+                    {
+                        documentation.push_str("\n\n**Parameters:**");
+                        for param in parameters {
+                            documentation.push_str(&format!(
+                                "\n- `{}`: {} ({:?}{})",
+                                param.name,
+                                param.description,
+                                param.param_type,
+                                if param.required {
+                                    ", required"
+                                } else {
+                                    ", optional"
+                                }
+                            ));
                         }
                     }
 
@@ -219,44 +219,44 @@ impl HandleCompletion for Backend {
         } else if !words.is_empty() && is_after_space {
             // Completing parameters for a command (cursor is after a space following the command)
             let command_name = words[0].to_uppercase();
-            if let Some(command_def) = active_flavor.commands.get(&command_name) {
-                if let Some(parameters) = &command_def.parameters {
-                    // Parse existing parameters to avoid duplicates
-                    let mut existing_params = std::collections::HashSet::new();
-                    for word in &words[1..] {
-                        if let Some(param_name) = word.split(&['=', ':']).next() {
-                            existing_params.insert(param_name.to_uppercase());
-                        }
+            if let Some(command_def) = active_flavor.commands.get(&command_name)
+                && let Some(parameters) = &command_def.parameters
+            {
+                // Parse existing parameters to avoid duplicates
+                let mut existing_params = std::collections::HashSet::new();
+                for word in &words[1..] {
+                    if let Some(param_name) = word.split(&['=', ':']).next() {
+                        existing_params.insert(param_name.to_uppercase());
                     }
+                }
 
-                    // Add completions for parameters not yet used
-                    for param in parameters {
-                        let param_upper = param.name.to_uppercase();
-                        if !existing_params.contains(&param_upper) {
-                            completions.push(CompletionItem {
-                                label: param.name.clone(),
-                                kind: Some(CompletionItemKind::PROPERTY),
-                                detail: Some(format!("{:?}", param.param_type)),
-                                documentation: Some(Documentation::String(
-                                    param.description.clone(),
-                                )),
-                                sort_text: Some(format!(
-                                    "{}{}",
-                                    if param.required { "0" } else { "1" },
-                                    param.name
-                                )),
-                                insert_text: Some(match param.param_type {
-                                    ParameterType::Float => format!("{}0.0", param.name),
-                                    ParameterType::Int => format!("{}0", param.name),
-                                    ParameterType::Bool => param.name.clone(),
-                                    ParameterType::String => format!("{}\"\"", param.name),
-                                }),
-                                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                                preselect: Some(param.required),
-                                filter_text: Some(param.name.clone()),
-                                ..Default::default()
-                            });
-                        }
+                // Add completions for parameters not yet used
+                for param in parameters {
+                    let param_upper = param.name.to_uppercase();
+                    if !existing_params.contains(&param_upper) {
+                        completions.push(CompletionItem {
+                            label: param.name.clone(),
+                            kind: Some(CompletionItemKind::PROPERTY),
+                            detail: Some(format!("{:?}", param.param_type)),
+                            documentation: Some(Documentation::String(
+                                param.description.clone(),
+                            )),
+                            sort_text: Some(format!(
+                                "{}{}",
+                                if param.required { "0" } else { "1" },
+                                param.name
+                            )),
+                            insert_text: Some(match param.param_type {
+                                ParameterType::Float => format!("{}0.0", param.name),
+                                ParameterType::Int => format!("{}0", param.name),
+                                ParameterType::Bool => param.name.clone(),
+                                ParameterType::String => format!("{}\"\"", param.name),
+                            }),
+                            insert_text_format: Some(InsertTextFormat::SNIPPET),
+                            preselect: Some(param.required),
+                            filter_text: Some(param.name.clone()),
+                            ..Default::default()
+                        });
                     }
                 }
             }
@@ -396,28 +396,28 @@ impl HandleDocumentSymbol for Backend {
                         .unwrap_or_else(|| "G-code command".to_string());
 
                     // Add parameter documentation for parameters present in this command
-                    if !command.parameters.is_empty() {
-                        if let Some(flavor_params) = &cmd_def.parameters {
-                            let mut param_docs = Vec::new();
+                    if !command.parameters.is_empty()
+                        && let Some(flavor_params) = &cmd_def.parameters
+                    {
+                        let mut param_docs = Vec::new();
 
-                            // Match actual parameters with flavor definitions
-                            for param in &command.parameters {
-                                let param_upper = param.letter.to_uppercase().to_string();
-                                if let Some(flavor_param) = flavor_params
-                                    .iter()
-                                    .find(|fp| fp.name.to_uppercase() == param_upper)
-                                {
-                                    param_docs.push(format!(
-                                        "{}: {}",
-                                        param.letter, flavor_param.description
-                                    ));
-                                }
+                        // Match actual parameters with flavor definitions
+                        for param in &command.parameters {
+                            let param_upper = param.letter.to_uppercase().to_string();
+                            if let Some(flavor_param) = flavor_params
+                                .iter()
+                                .find(|fp| fp.name.to_uppercase() == param_upper)
+                            {
+                                param_docs.push(format!(
+                                    "{}: {}",
+                                    param.letter, flavor_param.description
+                                ));
                             }
+                        }
 
-                            if !param_docs.is_empty() {
-                                detail.push_str(" | ");
-                                detail.push_str(&param_docs.join(", "));
-                            }
+                        if !param_docs.is_empty() {
+                            detail.push_str(" | ");
+                            detail.push_str(&param_docs.join(", "));
                         }
                     }
 
@@ -640,28 +640,28 @@ mod tests {
                     .unwrap_or_else(|| "G-code command".to_string());
 
                 // Add parameter documentation for parameters present in this command
-                if !command.parameters.is_empty() {
-                    if let Some(flavor_params) = &cmd_def.parameters {
-                        let mut param_docs = Vec::new();
+                if !command.parameters.is_empty()
+                    && let Some(flavor_params) = &cmd_def.parameters
+                {
+                    let mut param_docs = Vec::new();
 
-                        // Match actual parameters with flavor definitions
-                        for param in &command.parameters {
-                            let param_upper = param.letter.to_uppercase().to_string();
-                            if let Some(flavor_param) = flavor_params
-                                .iter()
-                                .find(|fp| fp.name.to_uppercase() == param_upper)
-                            {
-                                param_docs.push(format!(
-                                    "{}: {}",
-                                    param.letter, flavor_param.description
-                                ));
-                            }
+                    // Match actual parameters with flavor definitions
+                    for param in &command.parameters {
+                        let param_upper = param.letter.to_uppercase().to_string();
+                        if let Some(flavor_param) = flavor_params
+                            .iter()
+                            .find(|fp| fp.name.to_uppercase() == param_upper)
+                        {
+                            param_docs.push(format!(
+                                "{}: {}",
+                                param.letter, flavor_param.description
+                            ));
                         }
+                    }
 
-                        if !param_docs.is_empty() {
-                            detail.push_str(" | ");
-                            detail.push_str(&param_docs.join(", "));
-                        }
+                    if !param_docs.is_empty() {
+                        detail.push_str(" | ");
+                        detail.push_str(&param_docs.join(", "));
                     }
                 }
 

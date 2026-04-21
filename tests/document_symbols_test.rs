@@ -251,10 +251,10 @@ fn read_next_response_with_id(
         let response: Value = serde_json::from_str(&body).expect("Valid JSON response");
 
         // Check if this is the response we're looking for
-        if let Some(id) = response.get("id") {
-            if id.as_u64() == Some(expected_id) {
-                return response;
-            }
+        if let Some(id) = response.get("id")
+            && id.as_u64() == Some(expected_id)
+        {
+            return response;
         }
 
         // Otherwise, this might be a notification/log message, skip it
