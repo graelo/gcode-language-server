@@ -3,6 +3,7 @@ name = "gcode-language-server"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.95.0"
+license = "MIT"
 
 [[bin]]
 name = "gcode-ls"
