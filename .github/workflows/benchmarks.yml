@@ -101,23 +101,22 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           mkdir -p benchmark-results
-          echo "# Performance Benchmark Results" > benchmark-results/summary.md
-          echo "" >> benchmark-results/summary.md
-          echo "**Date:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> benchmark-results/summary.md
-          echo "**Commit:** ${GITHUB_SHA}" >> benchmark-results/summary.md
-          echo "**Branch:** ${GITHUB_REF_NAME}" >> benchmark-results/summary.md
-          echo "" >> benchmark-results/summary.md
-
-          # Add system info
-          echo "## System Information" >> benchmark-results/summary.md
-          echo "- **OS:** $(uname -s) $(uname -r)" >> benchmark-results/summary.md
-          echo "- **CPU:** $(grep 'model name' /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)" >> benchmark-results/summary.md
-          echo "- **Memory:** $(free -h | grep 'Mem:' | awk '{print $2}')" >> benchmark-results/summary.md
-          echo "- **Rust:** $(rustc --version)" >> benchmark-results/summary.md
-          echo "" >> benchmark-results/summary.md
-
-          echo "## Benchmark Results" >> benchmark-results/summary.md
-          echo "See the Actions logs for detailed benchmark results." >> benchmark-results/summary.md
+          {
+            echo "# Performance Benchmark Results"
+            echo ""
+            echo "**Date:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
+            echo "**Commit:** ${GITHUB_SHA}"
+            echo "**Branch:** ${GITHUB_REF_NAME}"
+            echo ""
+            echo "## System Information"
+            echo "- **OS:** $(uname -s) $(uname -r)"
+            echo "- **CPU:** $(grep 'model name' /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)"
+            echo "- **Memory:** $(free -h | grep 'Mem:' | awk '{print $2}')"
+            echo "- **Rust:** $(rustc --version)"
+            echo ""
+            echo "## Benchmark Results"
+            echo "See the Actions logs for detailed benchmark results."
+          } > benchmark-results/summary.md
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
