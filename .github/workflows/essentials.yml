@@ -6,6 +6,7 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 permissions: {}
 
@@ -84,6 +85,10 @@ jobs:
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
+    # Run on push to main (keeps Codecov baseline current) or on PR with label
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-coverage'))
     permissions:
       contents: read
     steps:
