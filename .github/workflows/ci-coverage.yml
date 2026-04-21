@@ -1,6 +1,6 @@
 # Code coverage: unconditional on main, label-gated on PRs.
 
-name: Coverage
+name: 'CI: Coverage'
 
 on:
   push:
@@ -13,9 +13,9 @@ permissions: {}
 
 jobs:
   coverage:
-    name: Code Coverage
+    name: Run coverage
     runs-on: ubuntu-latest
-    if: >
+    if: |
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.label.name == 'run-coverage')
     permissions:
@@ -26,7 +26,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: stable

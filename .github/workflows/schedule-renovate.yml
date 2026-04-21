@@ -1,24 +1,22 @@
-# Runs Renovate to check for dependency updates.
-# Triggers daily at 19:00 UTC, or manually via workflow_dispatch.
-
-name: Renovate
+name: 'Schedule: Renovate'
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 19 * * *' # daily at 19:00 UTC
+    - cron: '0 19 * * 2,5' # Tuesdays and Fridays at 19:00 UTC
 
 permissions: {}
 
 jobs:
   renovate:
-    name: Renovate
+    name: Run Renovate
     runs-on: ubuntu-latest
     environment: renovate
     permissions:
       contents: write
       issues: write
       pull-requests: write
+
     steps:
       - name: Generate GitHub App token
         id: app-token

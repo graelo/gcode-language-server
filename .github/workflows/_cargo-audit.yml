@@ -24,7 +24,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Cache crates from crates.io
+      - name: Cache crates
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         continue-on-error: false
         with:
@@ -36,7 +36,7 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-stable-audit-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: cargo deny check
+      - name: Check vulnerabilities & licences (cargo deny)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

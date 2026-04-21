@@ -1,4 +1,4 @@
-name: Performance Benchmarks
+name: 'CI: Benchmarks'
 
 on:
   push:
@@ -26,13 +26,13 @@ env:
 
 jobs:
   benchmark:
-    name: Performance Benchmarks
+    name: Run benchmarks
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
     # Run on push to main/staging, manual dispatch, or when 'run-benchmarks' label is added to PR
-    if: >
+    if: |
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && github.event.label.name == 'run-benchmarks')
@@ -43,13 +43,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: stable
-          components: rustfmt, clippy
 
-      - name: Cache crates from crates.io
+      - name: Cache crates
         if: github.event_name == 'pull_request'
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         continue-on-error: false
@@ -70,31 +69,31 @@ jobs:
       - name: Generate test files
         run: python3 benches/generate_test_files.py
 
-      - name: Build project in release mode
+      - name: Build (release)
         run: cargo build --release
 
-      - name: Run parsing benchmarks
-        if: >
+      - name: 'Bench: parsing'
+        if: |
           github.event.inputs.benchmark_type == 'parsing' ||
           github.event.inputs.benchmark_type == 'all' ||
           github.event.inputs.benchmark_type == ''
         run: cargo bench --bench parsing_benchmarks
 
-      - name: Run LSP benchmarks
-        if: >
+      - name: 'Bench: LSP'
+        if: |
           github.event.inputs.benchmark_type == 'lsp' ||
           github.event.inputs.benchmark_type == 'all' ||
           github.event.inputs.benchmark_type == ''
         run: cargo bench --bench lsp_benchmarks
 
-      - name: Run validation benchmarks
-        if: >
+      - name: 'Bench: validation'
+        if: |
           github.event.inputs.benchmark_type == 'validation' ||
           github.event.inputs.benchmark_type == 'all' ||
           github.event.inputs.benchmark_type == ''
         run: cargo bench --bench validation_benchmarks
 
-      - name: Generate benchmark summary
+      - name: Generate summary
         env:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -118,7 +117,7 @@ jobs:
             echo "See the Actions logs for detailed benchmark results."
           } > benchmark-results/summary.md
 
-      - name: Upload benchmark results
+      - name: Upload results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: benchmark-results-${{ github.sha }}
@@ -128,7 +127,7 @@ jobs:
             *_benchmark_results.json
           retention-days: 1
 
-      - name: Comment PR with benchmark results
+      - name: Comment PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -159,7 +158,7 @@ jobs:
               body: comment
             });
 
-      - name: Check performance thresholds
+      - name: Check thresholds
         run: |
           echo "Checking performance against defined thresholds..."
 
@@ -200,7 +199,7 @@ jobs:
           python3 check_performance.py
 
   regression-detection:
-    name: Performance Regression Detection
+    name: Regression detection
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -208,13 +207,13 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.label.name == 'run-benchmarks'
 
     steps:
-      - name: Download benchmark results
+      - name: Download results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: benchmark-results-${{ github.sha }}
           path: current-results/
 
-      - name: Performance regression analysis
+      - name: Analyze regressions
         run: |
           echo "Analyzing performance regression..."
           echo "This step would compare current results with baseline results from main branch."
