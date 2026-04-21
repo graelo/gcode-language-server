@@ -1,0 +1,105 @@
+# Pre-release testing on staging: multi-version and multi-platform matrix.
+
+name: Large Scope
+
+on:
+  push:
+    branches:
+      - staging
+
+permissions: {}
+
+jobs:
+  test-versions:
+    name: Test (Rust ${{ matrix.rust }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        rust: ['1.95.0', beta, nightly]
+    steps:
+      - name: Rust install
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Quality - cargo fmt
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Quality - cargo clippy
+        run: |
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Build (dev)
+        run: cargo build
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2.75.18
+        with:
+          tool: cargo-nextest@0.9.133
+
+      - name: Test
+        run: ./ci/test_full.sh
+
+  test-other-platforms:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            rust: stable
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            rust: stable
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            rust: stable
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust: stable
+    steps:
+      - name: Rust install
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build (dev)
+        run: cargo build
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2.75.18
+        with:
+          tool: cargo-nextest@0.9.133
+
+      - name: Test (Unix)
+        if: runner.os != 'Windows'
+        run: ./ci/test_full.sh
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: ./ci/test_full.sh
