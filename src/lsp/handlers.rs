@@ -238,9 +238,7 @@ impl HandleCompletion for Backend {
                             label: param.name.clone(),
                             kind: Some(CompletionItemKind::PROPERTY),
                             detail: Some(format!("{:?}", param.param_type)),
-                            documentation: Some(Documentation::String(
-                                param.description.clone(),
-                            )),
+                            documentation: Some(Documentation::String(param.description.clone())),
                             sort_text: Some(format!(
                                 "{}{}",
                                 if param.required { "0" } else { "1" },
@@ -463,7 +461,7 @@ impl HandleDocumentSymbol for Backend {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::{parse_line, Command, Parameter};
+    use crate::parser::{Command, Parameter, parse_line};
 
     #[test]
     fn test_symbol_name_generation() {
@@ -652,10 +650,8 @@ mod tests {
                             .iter()
                             .find(|fp| fp.name.to_uppercase() == param_upper)
                         {
-                            param_docs.push(format!(
-                                "{}: {}",
-                                param.letter, flavor_param.description
-                            ));
+                            param_docs
+                                .push(format!("{}: {}", param.letter, flavor_param.description));
                         }
                     }
 

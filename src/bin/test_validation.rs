@@ -1,6 +1,6 @@
 use gcode_language_server::flavor::registry::FlavorRegistry;
 use gcode_language_server::flavor::schema::{Flavor, FlavorFile};
-use gcode_language_server::validation::engine::{validate_document, Severity};
+use gcode_language_server::validation::engine::{Severity, validate_document};
 use std::env;
 use std::fs;
 

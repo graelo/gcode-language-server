@@ -4,9 +4,9 @@ use std::path::Path;
 use tokio::io::{stdin, stdout};
 use tower_lsp::{LspService, Server};
 
+use crate::Config;
 use crate::flavor::registry::FlavorRegistry;
 use crate::lsp::backend::Backend;
-use crate::Config;
 
 /// Start the LSP server
 pub async fn serve() -> Result<()> {
