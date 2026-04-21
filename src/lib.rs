@@ -19,5 +19,5 @@ pub mod validation;
 // Re-exports for clean public API
 pub use config::{Args, Config};
 pub use flavor::{Flavor, FlavorRegistry};
-pub use parser::{parse_line, ParsedLine};
-pub use validation::{validate_document, Diagnostic};
+pub use parser::{ParsedLine, parse_line};
+pub use validation::{Diagnostic, validate_document};

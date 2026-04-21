@@ -7,7 +7,7 @@ pub mod ast;
 pub mod lexer;
 
 pub use ast::{Command, Comment, Parameter, ParsedLine};
-pub use lexer::{tokenize_line, Token, TokenKind};
+pub use lexer::{Token, TokenKind, tokenize_line};
 
 /// Parse a single line of GCode into structured data
 ///

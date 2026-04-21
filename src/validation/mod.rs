@@ -4,7 +4,7 @@
 
 pub mod engine;
 
-pub use engine::{validate_document, validate_line, Diagnostic, Severity};
+pub use engine::{Diagnostic, Severity, validate_document, validate_line};
 
 // Re-export common types
 pub use engine::ValidationResult;

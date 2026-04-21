@@ -255,9 +255,11 @@ mod tests {
             "G0 without coordinates should be invalid"
         );
         assert_eq!(result.diagnostics.len(), 1);
-        assert!(result.diagnostics[0]
-            .message
-            .contains("requires at least one coordinate"));
+        assert!(
+            result.diagnostics[0]
+                .message
+                .contains("requires at least one coordinate")
+        );
 
         // Test 3: Valid G0 command with multiple coordinates
         let valid_multi_cmd = Command {

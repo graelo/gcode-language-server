@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use gcode_language_server::{parse_line, ParsedLine};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
+use gcode_language_server::{ParsedLine, parse_line};
 use std::fs;
 use std::hint::black_box;
 

@@ -1,0 +1,124 @@
+# Any commit on main & PRs
+
+name: Essentials
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions: {}
+
+jobs:
+  test:
+    name: Quality checks & tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        rust: [stable]
+    steps:
+      - name: Rust install
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Cache crates from crates.io
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-hash-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Quality - cargo fmt
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Quality - cargo clippy
+        run: |
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Quality - convco check
+        run: |
+          git show-ref
+          echo Commit message: "$(git log -1 --pretty=%B)"
+          curl -sSfLO https://github.com/convco/convco/releases/latest/download/convco-ubuntu.zip
+          unzip convco-ubuntu.zip
+          chmod +x convco
+          ./convco --version
+          ./convco check -c .convco
+          rm convco
+
+      - name: Build (dev)
+        run: cargo build
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2.75.18
+        with:
+          tool: cargo-nextest@0.9.133
+
+      - name: Test
+        run: ./ci/test_full.sh
+
+      - name: Test CLI help output
+        run: ./target/release/gcode-ls --help
+
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      cargo_lock: ${{ steps.filter.outputs.cargo_lock }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            cargo_lock:
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+            workflows:
+              - '.github/workflows/**'
+              - '.github/actions/**'
+              - '.github/poutine.yml'
+              - '.github/zizmor.yml'
+              - 'renovate.json'
+
+  cargo-audit:
+    needs: changes
+    if: needs.changes.outputs.cargo_lock == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/cargo-audit.yml
+
+  ci-security:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    uses: ./.github/workflows/ci-security.yml

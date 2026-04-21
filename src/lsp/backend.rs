@@ -5,12 +5,12 @@ use tokio::sync::Mutex;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
+use crate::Config;
 use crate::flavor::registry::FlavorRegistry;
 use crate::lsp::document::DocumentState;
 use crate::lsp::handlers::{
     HandleCompletion, HandleDiagnostics, HandleDocumentSymbol, HandleHover,
 };
-use crate::Config;
 
 /// The main LSP backend that holds state and implements the Language Server Protocol
 pub struct Backend {

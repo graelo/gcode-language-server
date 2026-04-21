@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use gcode_language_server::{validate_document, FlavorRegistry};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
+use gcode_language_server::{FlavorRegistry, validate_document};
 use std::hint::black_box;
 
 /// Generate test content with specific validation scenarios
