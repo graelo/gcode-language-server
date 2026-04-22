@@ -1,6 +1,6 @@
 # Pre-release testing on staging: multi-version and multi-platform matrix.
 
-name: Large Scope
+name: 'CI: Compatibility Matrix'
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   test-versions:
-    name: Test (Rust ${{ matrix.rust }})
+    name: Linux (${{ matrix.rust }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,7 +19,7 @@ jobs:
       matrix:
         rust: ['1.95.0', beta, nightly]
     steps:
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}
@@ -30,11 +30,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Quality - cargo fmt
+      - name: Check formatting
         run: |
           cargo fmt --all -- --check
 
-      - name: Quality - cargo clippy
+      - name: Lint
         run: |
           cargo clippy --all-targets -- -D warnings
 
@@ -53,7 +53,7 @@ jobs:
         run: ./ci/test_full.sh
 
   test-other-platforms:
-    name: Test (${{ matrix.os }})
+    name: ${{ matrix.os }} (stable)
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -77,7 +77,6 @@ jobs:
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}
-          components: rustfmt, clippy
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

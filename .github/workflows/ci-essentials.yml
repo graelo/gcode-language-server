@@ -1,6 +1,6 @@
 # Any commit on main & PRs
 
-name: Essentials
+name: 'CI: Essentials'
 on:
   push:
     branches:
@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   test:
-    name: Quality checks & tests
+    name: Build & test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,7 +19,7 @@ jobs:
       matrix:
         rust: [stable]
     steps:
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}
@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Cache crates from crates.io
+      - name: Cache crates
         if: github.event_name == 'pull_request'
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         continue-on-error: false
@@ -45,15 +45,15 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ matrix.rust }}-hash-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Quality - cargo fmt
+      - name: Check formatting
         run: |
           cargo fmt --all -- --check
 
-      - name: Quality - cargo clippy
+      - name: Lint
         run: |
           cargo clippy --all-targets -- -D warnings
 
-      - name: Quality - convco check
+      - name: Check commit messages
         run: |
           git show-ref
           echo Commit message: "$(git log -1 --pretty=%B)"
@@ -112,7 +112,7 @@ jobs:
     if: needs.changes.outputs.cargo_lock == 'true'
     permissions:
       contents: read
-    uses: ./.github/workflows/cargo-audit.yml
+    uses: ./.github/workflows/_cargo-audit.yml
 
   ci-security:
     needs: changes
@@ -121,4 +121,4 @@ jobs:
       security-events: write
       contents: read
       actions: read
-    uses: ./.github/workflows/ci-security.yml
+    uses: ./.github/workflows/_ci-security.yml

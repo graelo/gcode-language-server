@@ -8,7 +8,7 @@ permissions: {}
 
 jobs:
   prepare-artifacts:
-    name: Prepare release artifacts
+    name: Build artifacts
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -51,7 +51,7 @@ jobs:
             suffix: .exe
             archive_ext: zip
     steps:
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}
@@ -62,7 +62,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Build Release
+      - name: Build (release)
         run: cargo build --release
 
       - name: Prepare plain binary
@@ -93,14 +93,14 @@ jobs:
           cp "target/release/gcode-ls" .
           tar Jcf "gcode-ls-${TARGET}.${ARCHIVE_EXT}" "gcode-ls"
 
-      - name: Upload archive artifact
+      - name: Upload archive
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gcode-ls-${{ matrix.target }}.${{ matrix.archive_ext }}
           path: gcode-ls-${{ matrix.target }}.${{ matrix.archive_ext }}
           retention-days: 1
 
-      - name: Upload plain binary artifact
+      - name: Upload binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gcode-ls-${{ matrix.gh_os }}-${{ matrix.gh_arch }}${{ matrix.suffix }}
@@ -108,7 +108,7 @@ jobs:
           retention-days: 1
 
   release:
-    name: Create a GitHub Release
+    name: Publish release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -124,14 +124,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Download convco
+      - name: Install convco
         run: |
           git show-ref
           curl -sSfLO https://github.com/convco/convco/releases/latest/download/convco-ubuntu.zip
           unzip convco-ubuntu.zip
           chmod +x convco
 
-      - name: Use convco to create the changelog
+      - name: Generate changelog
         run: |
           ./convco changelog -c .convco --max-versions 1 > CHANGELOG.md
           rm convco convco-ubuntu.zip
@@ -167,7 +167,7 @@ jobs:
         with:
           name: gcode-ls-windows-amd64.exe
 
-      - name: Create GitHub Release
+      - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
@@ -180,7 +180,7 @@ jobs:
             ./gcode-ls-darwin-arm64 ./gcode-ls-darwin-amd64 \
             ./gcode-ls-windows-amd64.exe
 
-      - name: Attest build provenance
+      - name: Attest provenance
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-path: '*.zip,*.tar.xz'
