@@ -1,6 +1,6 @@
 # Any commit on main & PRs
 
-name: 'CI: Build & Test'
+name: 'CI: Essentials'
 on:
   push:
     branches:
