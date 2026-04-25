@@ -1,3 +1,9 @@
+# Tag-triggered release: build multi-platform binaries and publish.
+#
+# Local:
+#   act push -W .github/workflows/release.yml -j prepare-artifacts
+#   act push -W .github/workflows/release.yml -j release
+
 name: Release
 on:
   push:
@@ -5,6 +11,10 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   prepare-artifacts:
@@ -65,7 +75,7 @@ jobs:
       - name: Build (release)
         run: cargo build --release
 
-      - name: Prepare plain binary
+      - name: Package – prepare binary
         env:
           SUFFIX: ${{ matrix.suffix }}
           GH_OS: ${{ matrix.gh_os }}
@@ -73,7 +83,7 @@ jobs:
         run: cp "target/release/gcode-ls${SUFFIX}" "gcode-ls-${GH_OS}-${GH_ARCH}${SUFFIX}"
         shell: bash
 
-      - name: Compress to zip (macOS/Windows)
+      - name: Package – compress (zip)
         if: matrix.archive_ext == 'zip'
         env:
           TARGET: ${{ matrix.target }}
@@ -84,7 +94,7 @@ jobs:
           zip -A "gcode-ls-${TARGET}.${ARCHIVE_EXT}" "gcode-ls${SUFFIX}"
         shell: bash
 
-      - name: Compress to tar.xz (Linux)
+      - name: Package – compress (tar.xz)
         if: matrix.archive_ext == 'tar.xz'
         env:
           TARGET: ${{ matrix.target }}
@@ -93,14 +103,14 @@ jobs:
           cp "target/release/gcode-ls" .
           tar Jcf "gcode-ls-${TARGET}.${ARCHIVE_EXT}" "gcode-ls"
 
-      - name: Upload archive
+      - name: Upload – archive
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gcode-ls-${{ matrix.target }}.${{ matrix.archive_ext }}
           path: gcode-ls-${{ matrix.target }}.${{ matrix.archive_ext }}
           retention-days: 1
 
-      - name: Upload binary
+      - name: Upload – binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gcode-ls-${{ matrix.gh_os }}-${{ matrix.gh_arch }}${{ matrix.suffix }}
@@ -110,6 +120,7 @@ jobs:
   release:
     name: Publish release
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
       id-token: write
@@ -136,34 +147,44 @@ jobs:
           ./convco changelog -c .convco --max-versions 1 > CHANGELOG.md
           rm convco convco-ubuntu.zip
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – archive (x86_64-unknown-linux-gnu)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-x86_64-unknown-linux-gnu.tar.xz
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – archive (aarch64-unknown-linux-gnu)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-aarch64-unknown-linux-gnu.tar.xz
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – archive (aarch64-apple-darwin)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-aarch64-apple-darwin.zip
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – archive (x86_64-apple-darwin)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-x86_64-apple-darwin.zip
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – archive (x86_64-pc-windows-msvc)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-x86_64-pc-windows-msvc.zip
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – binary (linux-amd64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-linux-amd64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – binary (linux-arm64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-linux-arm64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – binary (darwin-arm64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-darwin-arm64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – binary (darwin-amd64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-darwin-amd64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Download – binary (windows-amd64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: gcode-ls-windows-amd64.exe
 

@@ -1,17 +1,25 @@
-# Pre-release testing on staging: multi-version and multi-platform matrix.
+# Compatibility testing: multi-version and multi-platform matrix.
+#
+# Local:
+#   act push -W .github/workflows/ci-compatibility-matrix.yml -j test-versions
+#   act push -W .github/workflows/ci-compatibility-matrix.yml -j test-other-platforms
 
 name: 'CI: Compatibility Matrix'
 
 on:
   push:
     branches:
-      - staging
+      - 'compat/*'
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   test-versions:
-    name: Linux (${{ matrix.rust }})
+    name: ubuntu-latest (${{ matrix.rust }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,11 +38,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check formatting
+      - name: Quality – cargo fmt
         run: |
           cargo fmt --all -- --check
 
-      - name: Lint
+      - name: Quality – cargo clippy
         run: |
           cargo clippy --all-targets -- -D warnings
 
@@ -73,7 +81,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}

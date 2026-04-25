@@ -1,4 +1,7 @@
 # Reusable workflow: CI/CD supply chain security audits.
+#
+# Local (standalone):
+#   act workflow_call -W .github/workflows/_ci-security.yml
 
 name: CI Security
 
