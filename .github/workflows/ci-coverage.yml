@@ -1,4 +1,7 @@
-# Code coverage: unconditional on main, label-gated on PRs.
+# Code coverage: unconditional on main, on-demand via workflow_dispatch.
+#
+# On-demand for a PR branch:
+#   gh workflow run "CI: Coverage" --ref <branch>
 #
 # Local:
 #   act push -W .github/workflows/ci-coverage.yml
@@ -9,8 +12,7 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types: [labeled]
+  workflow_dispatch:
 
 permissions: {}
 
@@ -22,9 +24,6 @@ jobs:
   coverage:
     name: Run coverage
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.label.name == 'run-coverage')
     permissions:
       contents: read
     steps:

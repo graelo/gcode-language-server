@@ -1,5 +1,13 @@
 # Performance benchmarks: parsing, LSP, and validation.
 #
+# Triggers:
+#   - push to main (automatic baseline)
+#   - workflow_dispatch (on-demand, supports branch selection and benchmark type)
+#
+# On-demand for a PR branch:
+#   gh workflow run "CI: Benchmarks" --ref <branch>
+#   gh workflow run "CI: Benchmarks" --ref <branch> -f benchmark_type=parsing
+#
 # Local:
 #   act push -W .github/workflows/ci-benchmarks.yml -j benchmark
 #   act workflow_dispatch -W .github/workflows/ci-benchmarks.yml
@@ -9,9 +17,6 @@ name: 'CI: Benchmarks'
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-    types: [labeled]
   workflow_dispatch:
     inputs:
       benchmark_type:
@@ -40,12 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
-    # Run on push to main/staging, manual dispatch, or when 'run-benchmarks' label is added to PR
-    if: |
-      github.event_name == 'push' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.label.name == 'run-benchmarks')
 
     steps:
       - name: Checkout
@@ -59,7 +58,7 @@ jobs:
           toolchain: stable
 
       - name: Cache crates
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         continue-on-error: false
         with:
@@ -84,23 +83,23 @@ jobs:
 
       - name: Bench – parsing
         if: |
+          github.event_name != 'workflow_dispatch' ||
           github.event.inputs.benchmark_type == 'parsing' ||
-          github.event.inputs.benchmark_type == 'all' ||
-          github.event.inputs.benchmark_type == ''
+          github.event.inputs.benchmark_type == 'all'
         run: cargo bench --bench parsing_benchmarks
 
       - name: Bench – LSP
         if: |
+          github.event_name != 'workflow_dispatch' ||
           github.event.inputs.benchmark_type == 'lsp' ||
-          github.event.inputs.benchmark_type == 'all' ||
-          github.event.inputs.benchmark_type == ''
+          github.event.inputs.benchmark_type == 'all'
         run: cargo bench --bench lsp_benchmarks
 
       - name: Bench – validation
         if: |
+          github.event_name != 'workflow_dispatch' ||
           github.event.inputs.benchmark_type == 'validation' ||
-          github.event.inputs.benchmark_type == 'all' ||
-          github.event.inputs.benchmark_type == ''
+          github.event.inputs.benchmark_type == 'all'
         run: cargo bench --bench validation_benchmarks
 
       - name: Report – generate summary
@@ -136,37 +135,6 @@ jobs:
             target/criterion/
             *_benchmark_results.json
           retention-days: 1
-
-      - name: Report – comment PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            let comment = '## Performance Benchmark Results\n\n';
-            comment += `**Commit:** ${context.sha.substring(0, 7)}\n`;
-            comment += `**Date:** ${new Date().toISOString()}\n\n`;
-
-            comment += '### Summary\n';
-            comment += 'Performance benchmarks have been executed for this PR. ';
-            comment += `Check the [Actions tab](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for detailed results.\n\n`;
-
-            comment += '### Key Metrics Tested\n';
-            comment += '- **Parsing Performance**: Single-line and multi-file parsing throughput\n';
-            comment += '- **LSP Operations**: Hover, completion, and validation response times\n';
-            comment += '- **Validation Engine**: Error detection and parameter validation performance\n';
-            comment += '- **Memory Usage**: Resource consumption patterns\n\n';
-
-            comment += '### Performance Targets\n';
-            comment += '- **Parsing**: >1MB/s for typical G-code files\n';
-            comment += '- **LSP Response**: <100ms for files <1MB\n';
-            comment += '- **Memory**: <50MB for typical workloads\n';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
 
       - name: Report – check thresholds
         run: |
@@ -207,24 +175,3 @@ jobs:
           EOF
 
           python3 check_performance.py
-
-  regression-detection:
-    name: Regression detection
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs: benchmark
-    if: github.event_name == 'pull_request' && github.event.label.name == 'run-benchmarks'
-
-    steps:
-      - name: Download results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: benchmark-results-${{ github.sha }}
-          path: current-results/
-
-      - name: Analyze regressions
-        run: |
-          echo "Analyzing performance regression..."
-          echo "This step would compare current results with baseline results from main branch."
-          echo "Regression detection framework ready"
