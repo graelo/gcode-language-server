@@ -1,4 +1,7 @@
 # Code coverage: unconditional on main, label-gated on PRs.
+#
+# Local:
+#   act push -W .github/workflows/ci-coverage.yml
 
 name: 'CI: Coverage'
 

@@ -1,4 +1,7 @@
 # Reusable workflow: dependency audit via cargo-deny and cargo-pants.
+#
+# Local (standalone):
+#   act workflow_call -W .github/workflows/_cargo-audit.yml
 
 name: Cargo Audit
 

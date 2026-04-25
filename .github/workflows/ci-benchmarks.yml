@@ -1,8 +1,14 @@
+# Performance benchmarks: parsing, LSP, and validation.
+#
+# Local:
+#   act push -W .github/workflows/ci-benchmarks.yml -j benchmark
+#   act workflow_dispatch -W .github/workflows/ci-benchmarks.yml
+
 name: 'CI: Benchmarks'
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
   pull_request:
     branches: [main]
     types: [labeled]

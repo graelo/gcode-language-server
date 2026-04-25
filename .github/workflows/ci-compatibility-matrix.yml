@@ -1,11 +1,15 @@
-# Pre-release testing on staging: multi-version and multi-platform matrix.
+# Compatibility testing: multi-version and multi-platform matrix.
+#
+# Local:
+#   act push -W .github/workflows/ci-compatibility-matrix.yml -j test-versions
+#   act push -W .github/workflows/ci-compatibility-matrix.yml -j test-other-platforms
 
 name: 'CI: Compatibility Matrix'
 
 on:
   push:
     branches:
-      - staging
+      - 'compat/*'
 
 permissions: {}
 
@@ -15,7 +19,7 @@ concurrency:
 
 jobs:
   test-versions:
-    name: Linux (${{ matrix.rust }})
+    name: ubuntu-latest (${{ matrix.rust }})
     runs-on: ubuntu-latest
     permissions:
       contents: read

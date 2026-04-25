@@ -1,3 +1,9 @@
+# Tag-triggered release: build multi-platform binaries and publish.
+#
+# Local:
+#   act push -W .github/workflows/release.yml -j prepare-artifacts
+#   act push -W .github/workflows/release.yml -j release
+
 name: Release
 on:
   push:
@@ -114,6 +120,7 @@ jobs:
   release:
     name: Publish release
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
       id-token: write
