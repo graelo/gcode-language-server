@@ -34,11 +34,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check formatting
+      - name: Quality – cargo fmt
         run: |
           cargo fmt --all -- --check
 
-      - name: Lint
+      - name: Quality – cargo clippy
         run: |
           cargo clippy --all-targets -- -D warnings
 
@@ -77,7 +77,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
-      - name: Rust install
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}

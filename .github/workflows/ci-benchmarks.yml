@@ -70,34 +70,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gnuplot
 
-      - name: Generate test files
+      - name: Setup – generate test files
         run: python3 benches/generate_test_files.py
 
       - name: Build (release)
         run: cargo build --release
 
-      - name: 'Bench: parsing'
+      - name: Bench – parsing
         if: |
           github.event.inputs.benchmark_type == 'parsing' ||
           github.event.inputs.benchmark_type == 'all' ||
           github.event.inputs.benchmark_type == ''
         run: cargo bench --bench parsing_benchmarks
 
-      - name: 'Bench: LSP'
+      - name: Bench – LSP
         if: |
           github.event.inputs.benchmark_type == 'lsp' ||
           github.event.inputs.benchmark_type == 'all' ||
           github.event.inputs.benchmark_type == ''
         run: cargo bench --bench lsp_benchmarks
 
-      - name: 'Bench: validation'
+      - name: Bench – validation
         if: |
           github.event.inputs.benchmark_type == 'validation' ||
           github.event.inputs.benchmark_type == 'all' ||
           github.event.inputs.benchmark_type == ''
         run: cargo bench --bench validation_benchmarks
 
-      - name: Generate summary
+      - name: Report – generate summary
         env:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -121,7 +121,7 @@ jobs:
             echo "See the Actions logs for detailed benchmark results."
           } > benchmark-results/summary.md
 
-      - name: Upload results
+      - name: Report – upload results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: benchmark-results-${{ github.sha }}
@@ -131,7 +131,7 @@ jobs:
             *_benchmark_results.json
           retention-days: 1
 
-      - name: Comment PR
+      - name: Report – comment PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -162,7 +162,7 @@ jobs:
               body: comment
             });
 
-      - name: Check thresholds
+      - name: Report – check thresholds
         run: |
           echo "Checking performance against defined thresholds..."
 

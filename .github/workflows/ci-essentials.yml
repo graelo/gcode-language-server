@@ -49,15 +49,15 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ matrix.rust }}-hash-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Check formatting
+      - name: Quality – cargo fmt
         run: |
           cargo fmt --all -- --check
 
-      - name: Lint
+      - name: Quality – cargo clippy
         run: |
           cargo clippy --all-targets -- -D warnings
 
-      - name: Check commit messages
+      - name: Quality – convco check
         run: |
           git show-ref
           echo Commit message: "$(git log -1 --pretty=%B)"
@@ -82,7 +82,7 @@ jobs:
       - name: Test
         run: ./ci/test_full.sh
 
-      - name: Test CLI help output
+      - name: Test – CLI help output
         run: ./target/release/gcode-ls --help
 
   changes:
@@ -94,10 +94,12 @@ jobs:
       cargo_lock: ${{ steps.filter.outputs.cargo_lock }}
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - id: filter
+      - name: Filter changed paths
+        id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           filters: |
