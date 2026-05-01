@@ -3,7 +3,7 @@ name: 'Schedule: Renovate'
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 19 * * 2,5' # Tuesdays and Fridays at 19:00 UTC
+    - cron: '0 19 * * 5' # Fridays at 19:00 UTC
 
 permissions: {}
 
