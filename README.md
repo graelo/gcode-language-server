@@ -1,7 +1,7 @@
 # gcode-language-server
 
 [![release](https://img.shields.io/github/v/release/graelo/gcode-language-server)](https://github.com/graelo/gcode-language-server/releases/latest)
-[![build status](https://github.com/graelo/gcode-language-server/actions/workflows/ci.yml/badge.svg)](https://github.com/graelo/gcode-language-server/actions/workflows/ci.yml)
+[![build status](https://github.com/graelo/gcode-language-server/actions/workflows/ci-essentials.yml/badge.svg)](https://github.com/graelo/gcode-language-server/actions/workflows/ci-essentials.yml)
 [![codecov](https://codecov.io/gh/graelo/gcode-language-server/branch/main/graph/badge.svg)](https://codecov.io/gh/graelo/gcode-language-server)
 [![rust 2021 edition](https://img.shields.io/badge/edition-2021-blue.svg)](https://doc.rust-lang.org/edition-guide/rust-2021/index.html)
 [![license](https://img.shields.io/github/license/graelo/gcode-language-server)](LICENSE)
