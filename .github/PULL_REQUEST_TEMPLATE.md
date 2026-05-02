@@ -11,4 +11,4 @@
 
 ## Performance
 
-<!-- Add the `run-benchmarks` label to trigger performance benchmarks (takes ~20 min) -->
+<!-- Run benchmarks on demand: `gh workflow run "CI: Benchmarks" --ref <branch>` (takes ~20 min) -->
