@@ -41,14 +41,14 @@ jobs:
             suffix: ''
             archive_ext: zip
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             gh_os: linux
             gh_arch: amd64
             rust: stable
             suffix: ''
             archive_ext: tar.xz
           - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-musl
             gh_os: linux
             gh_arch: arm64
             rust: stable
@@ -66,6 +66,13 @@ jobs:
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+
+      - name: Install musl toolchain
+        if: contains(matrix.target, 'linux-musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -74,14 +81,15 @@ jobs:
           persist-credentials: false
 
       - name: Build (release)
-        run: cargo build --release
+        run: cargo build --release --target=${{ matrix.target }}
 
       - name: Package – prepare binary
         env:
           SUFFIX: ${{ matrix.suffix }}
           GH_OS: ${{ matrix.gh_os }}
           GH_ARCH: ${{ matrix.gh_arch }}
-        run: cp "target/release/gcode-ls${SUFFIX}" "gcode-ls-${GH_OS}-${GH_ARCH}${SUFFIX}"
+          TARGET: ${{ matrix.target }}
+        run: cp "target/${TARGET}/release/gcode-ls${SUFFIX}" "gcode-ls-${GH_OS}-${GH_ARCH}${SUFFIX}"
         shell: bash
 
       - name: Package – compress (zip)
@@ -91,7 +99,7 @@ jobs:
           ARCHIVE_EXT: ${{ matrix.archive_ext }}
           SUFFIX: ${{ matrix.suffix }}
         run: |
-          cp "target/release/gcode-ls${SUFFIX}" .
+          cp "target/${TARGET}/release/gcode-ls${SUFFIX}" .
           zip -A "gcode-ls-${TARGET}.${ARCHIVE_EXT}" "gcode-ls${SUFFIX}"
         shell: bash
 
@@ -101,7 +109,7 @@ jobs:
           TARGET: ${{ matrix.target }}
           ARCHIVE_EXT: ${{ matrix.archive_ext }}
         run: |
-          cp "target/release/gcode-ls" .
+          cp "target/${TARGET}/release/gcode-ls" .
           tar Jcf "gcode-ls-${TARGET}.${ARCHIVE_EXT}" "gcode-ls"
 
       - name: Upload – archive
@@ -148,14 +156,14 @@ jobs:
           ./convco changelog -c .convco --max-versions 1 > CHANGELOG.md
           rm convco convco-ubuntu.zip
 
-      - name: Download – archive (x86_64-unknown-linux-gnu)
+      - name: Download – archive (x86_64-unknown-linux-musl)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: gcode-ls-x86_64-unknown-linux-gnu.tar.xz
-      - name: Download – archive (aarch64-unknown-linux-gnu)
+          name: gcode-ls-x86_64-unknown-linux-musl.tar.xz
+      - name: Download – archive (aarch64-unknown-linux-musl)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: gcode-ls-aarch64-unknown-linux-gnu.tar.xz
+          name: gcode-ls-aarch64-unknown-linux-musl.tar.xz
       - name: Download – archive (aarch64-apple-darwin)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -205,7 +213,14 @@ jobs:
       - name: Attest provenance
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
-          subject-path: '*.zip,*.tar.xz'
+          subject-path: |
+            *.zip
+            *.tar.xz
+            gcode-ls-linux-amd64
+            gcode-ls-linux-arm64
+            gcode-ls-darwin-amd64
+            gcode-ls-darwin-arm64
+            gcode-ls-windows-amd64.exe
 
   homebrew:
     name: Bump Homebrew formula
