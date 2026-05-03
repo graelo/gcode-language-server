@@ -5,6 +5,7 @@ skip:
       - pkg:githubactions/dorny/paths-filter
       - pkg:githubactions/zizmorcore/zizmor-action
       - pkg:githubactions/boostsecurityio/poutine-action
+      - pkg:githubactions/mislav/bump-homebrew-formula-action
       - pkg:githubactions/renovatebot/github-action
       - pkg:githubactions/taiki-e/install-action
       - pkg:githubactions/codecov/codecov-action

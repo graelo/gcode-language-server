@@ -3,6 +3,7 @@
 # Local:
 #   act push -W .github/workflows/release.yml -j prepare-artifacts
 #   act push -W .github/workflows/release.yml -j release
+#   act push -W .github/workflows/release.yml -j homebrew
 
 name: Release
 on:
@@ -205,3 +206,41 @@ jobs:
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-path: '*.zip,*.tar.xz'
+
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+    needs:
+      - release
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: graelo
+          repositories: homebrew-tap
+
+      - name: Extract version
+        id: extract-version
+        run: |
+          echo "tag-name=${GITHUB_REF#refs/tags/}" >> "${GITHUB_OUTPUT}"
+
+      - uses: mislav/bump-homebrew-formula-action@ccf2332299a883f6af50a1d2d41e5df7904dd769 # v4.1
+        if: '!contains(github.ref, ''-'')' # skip prereleases
+        with:
+          formula-name: gcode-language-server
+          homebrew-tap: graelo/homebrew-tap
+          push-to: graelo/homebrew-tap
+          create-pullrequest: true
+          download-url: https://github.com/graelo/gcode-language-server/archive/refs/tags/${{ steps.extract-version.outputs.tag-name }}.tar.gz
+          commit-message: |
+            {{formulaName}} {{version}}
+
+            Created by https://github.com/mislav/bump-homebrew-formula-action
+        env:
+          COMMITTER_TOKEN: ${{ steps.app-token.outputs.token }}
