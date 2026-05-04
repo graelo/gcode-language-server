@@ -8,5 +8,4 @@ skip:
       - pkg:githubactions/mislav/bump-homebrew-formula-action
       - pkg:githubactions/renovatebot/github-action
       - pkg:githubactions/taiki-e/install-action
-      - pkg:githubactions/mlugg/setup-zig
       - pkg:githubactions/codecov/codecov-action

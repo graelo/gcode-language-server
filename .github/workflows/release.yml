@@ -34,27 +34,21 @@ jobs:
         include:
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
-            builder: cargo
             archive: tar.xz
           - target: aarch64-unknown-linux-musl
             os: ubuntu-24.04-arm
-            builder: cargo
             archive: tar.xz
           - target: x86_64-apple-darwin
-            os: macos-latest
-            builder: zigbuild
+            os: macos-15-intel
             archive: tar.xz
           - target: aarch64-apple-darwin
             os: macos-latest
-            builder: cargo
             archive: tar.xz
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            builder: cargo
             archive: zip
           - target: aarch64-pc-windows-msvc
             os: windows-11-arm
-            builder: cargo
             archive: zip
     steps:
       - name: Checkout
@@ -75,26 +69,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Install Zig
-        if: matrix.builder == 'zigbuild'
-        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
-        with:
-          version: 0.14.1
-
-      - name: Install cargo-zigbuild
-        if: matrix.builder == 'zigbuild'
-        uses: taiki-e/install-action@1329c298aa20c3257846c9b2e0e55967df3e3c37 # v2.75.25
-        with:
-          tool: cargo-zigbuild@0.22.3
-
-      - name: Build (zigbuild)
-        if: matrix.builder == 'zigbuild'
-        env:
-          TARGET: ${{ matrix.target }}
-        run: cargo zigbuild --release --target "${TARGET}"
-
-      - name: Build (cargo)
-        if: matrix.builder == 'cargo'
+      - name: Build (release)
         env:
           TARGET: ${{ matrix.target }}
         run: cargo build --release --target "${TARGET}"
