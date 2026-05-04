@@ -69,13 +69,17 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Install Zig and cargo-zigbuild
+      - name: Install Zig
+        if: matrix.builder == 'zigbuild'
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.14.1
+
+      - name: Install cargo-zigbuild
         if: matrix.builder == 'zigbuild'
         uses: taiki-e/install-action@1329c298aa20c3257846c9b2e0e55967df3e3c37 # v2.75.25
         with:
-          tool: |
-            zig@0.14.1
-            cargo-zigbuild@0.22.3
+          tool: cargo-zigbuild@0.22.3
 
       - name: Build (zigbuild)
         if: matrix.builder == 'zigbuild'
