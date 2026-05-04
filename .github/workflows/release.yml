@@ -25,6 +25,9 @@ jobs:
       contents: read
       id-token: write
       attestations: write
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -66,11 +69,13 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Install cargo-zigbuild
+      - name: Install Zig and cargo-zigbuild
         if: matrix.builder == 'zigbuild'
         uses: taiki-e/install-action@1329c298aa20c3257846c9b2e0e55967df3e3c37 # v2.75.25
         with:
-          tool: cargo-zigbuild@0.22.3
+          tool: |
+            zig@0.14.1
+            cargo-zigbuild@0.22.3
 
       - name: Build (zigbuild)
         if: matrix.builder == 'zigbuild'
@@ -85,7 +90,6 @@ jobs:
         run: cargo build --release --target "${TARGET}"
 
       - name: Package
-        shell: bash
         env:
           TARGET: ${{ matrix.target }}
           ARCHIVE_FORMAT: ${{ matrix.archive }}
