@@ -40,3 +40,7 @@ cargo nextest run $NEXTEST_PROFILE
 
 # doc tests (not supported by nextest)
 cargo test --doc
+
+# CLI smoke test (release binary)
+cargo build --release
+./target/release/gcode-ls --help
