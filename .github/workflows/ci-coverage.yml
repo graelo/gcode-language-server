@@ -38,10 +38,10 @@ jobs:
           toolchain: stable
 
       - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
+        run: cargo install --locked cargo-tarpaulin
 
       - name: Generate coverage report
-        run: cargo tarpaulin --verbose --timeout 120 --out xml
+        run: cargo tarpaulin --locked --verbose --timeout 120 --out xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0

@@ -35,12 +35,12 @@ fi
 set -x
 
 # test the default build
-cargo build
-cargo nextest run $NEXTEST_PROFILE
+cargo build --locked
+cargo nextest run --locked $NEXTEST_PROFILE
 
 # doc tests (not supported by nextest)
-cargo test --doc
+cargo test --locked --doc
 
 # CLI smoke test (release binary)
-cargo build --release
+cargo build --locked --release
 ./target/release/gcode-ls --help

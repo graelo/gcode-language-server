@@ -79,28 +79,28 @@ jobs:
         run: python3 benches/generate_test_files.py
 
       - name: Build (release)
-        run: cargo build --release
+        run: cargo build --locked --release
 
       - name: Bench – parsing
         if: |
           github.event_name != 'workflow_dispatch' ||
           github.event.inputs.benchmark_type == 'parsing' ||
           github.event.inputs.benchmark_type == 'all'
-        run: cargo bench --bench parsing_benchmarks
+        run: cargo bench --locked --bench parsing_benchmarks
 
       - name: Bench – LSP
         if: |
           github.event_name != 'workflow_dispatch' ||
           github.event.inputs.benchmark_type == 'lsp' ||
           github.event.inputs.benchmark_type == 'all'
-        run: cargo bench --bench lsp_benchmarks
+        run: cargo bench --locked --bench lsp_benchmarks
 
       - name: Bench – validation
         if: |
           github.event_name != 'workflow_dispatch' ||
           github.event.inputs.benchmark_type == 'validation' ||
           github.event.inputs.benchmark_type == 'all'
-        run: cargo bench --bench validation_benchmarks
+        run: cargo bench --locked --bench validation_benchmarks
 
       - name: Report – generate summary
         env:
