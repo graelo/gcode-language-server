@@ -72,7 +72,7 @@ jobs:
       - name: Build (release)
         env:
           TARGET: ${{ matrix.target }}
-        run: cargo build --release --target "${TARGET}"
+        run: cargo build --locked --release --target "${TARGET}"
 
       - name: Package
         env:
