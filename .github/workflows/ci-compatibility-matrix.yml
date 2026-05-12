@@ -23,9 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    defaults:
-      run:
-        shell: bash
     strategy:
       matrix:
         rust: ['1.95.0', beta, nightly]
