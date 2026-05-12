@@ -41,6 +41,13 @@ cargo nextest run --locked $NEXTEST_PROFILE
 # doc tests (not supported by nextest)
 cargo test --locked --doc
 
-# CLI smoke test (release binary)
+# CLI smoke test (release binary). CARGO_BUILD_TARGET (set in the compat
+# matrix) redirects output to target/<target>/release; Git Bash on Windows
+# reports OSTYPE=msys.
 cargo build --locked --release
-./target/release/gcode-ls --help
+
+BIN="target/${CARGO_BUILD_TARGET:+${CARGO_BUILD_TARGET}/}release/gcode-ls"
+case "${OSTYPE:-}" in
+  msys*|cygwin*) BIN="${BIN}.exe" ;;
+esac
+"${BIN}" --help
