@@ -38,6 +38,10 @@ set -x
 cargo build --locked
 cargo nextest run --locked $NEXTEST_PROFILE
 
+# test no-default-features
+cargo build --locked --no-default-features
+cargo nextest run --locked $NEXTEST_PROFILE --no-default-features
+
 # doc tests (not supported by nextest)
 cargo test --locked --doc
 
