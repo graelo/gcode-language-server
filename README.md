@@ -4,7 +4,7 @@
 [![build status](https://github.com/graelo/gcode-language-server/actions/workflows/ci-essentials.yml/badge.svg)](https://github.com/graelo/gcode-language-server/actions)
 [![codecov](https://codecov.io/gh/graelo/gcode-language-server/branch/main/graph/badge.svg)](https://codecov.io/gh/graelo/gcode-language-server)
 [![rust 2024 edition](https://img.shields.io/badge/edition-2024-blue.svg)](https://doc.rust-lang.org/edition-guide/rust-2024/index.html)
-[![license](https://img.shields.io/github/license/graelo/gcode-language-server)](LICENSE)
+[![license](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue)](#license)
 
 A Language Server Protocol (LSP) implementation for G-code, written in Rust.
 Provides intelligent editing features for G-code files used in 3D printing and
