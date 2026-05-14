@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         rust: ['1.95.0', beta, nightly]
@@ -98,7 +101,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install musl toolchain
+      - name: Install musl-tools (Linux)
         if: contains(matrix.target, 'linux-musl')
         run: |
           sudo apt-get update
