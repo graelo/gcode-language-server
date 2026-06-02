@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-- Document symbols (outline) support - in progress
+## [0.0.2] - 2026-06-02
 
-## [0.1.0] - 2025-09-25
+### Changed
+- CI workflows aligned with playbook conventions (matrix jobs, tooling install)
+- CI release workflow: publish prerelease tags as GitHub pre-releases, switch
+  homebrew bump to brew CLI, consistent binary/archive vocabulary
+- CI audit: guard cargo-pants install with command -v fallback
+- Pin github-actions-playbook to v1.1
+- Scope GitHub App token permissions explicitly in renovate workflow
+- Dependency updates (minor and patch)
+
+## [0.0.1] - 2025-09-25
 
 ### Added
 - LSP server with JSON-RPC over stdin/stdout
@@ -36,5 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Zero-copy tokenization
 - Unidirectional dependencies
 
-[Unreleased]: https://github.com/graelo/gcode-language-server/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/graelo/gcode-language-server/releases/tag/v0.1.0
+[Unreleased]: https://github.com/graelo/gcode-language-server/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/graelo/gcode-language-server/compare/v0.0.1...v0.0.2
+[0.0.1]: https://github.com/graelo/gcode-language-server/releases/tag/v0.0.1
