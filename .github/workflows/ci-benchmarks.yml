@@ -63,7 +63,6 @@ jobs:
         continue-on-error: false
         with:
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/

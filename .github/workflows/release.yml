@@ -87,8 +87,8 @@ jobs:
           fi
           SRC="target/${TARGET}/release/${BIN}${EXT}"
 
-          STANDALONE="${BIN}-${TARGET}${EXT}"
-          cp "${SRC}" "${STANDALONE}"
+          BINARY_FILE="${BIN}-${TARGET}${EXT}"
+          cp "${SRC}" "${BINARY_FILE}"
 
           PKG_DIR="${BIN}-${TAG}-${TARGET}"
           mkdir "${PKG_DIR}"
@@ -103,21 +103,21 @@ jobs:
             tar -cJf "${ARCHIVE_FILE}" "${PKG_DIR}"
           fi
 
-          echo "STANDALONE=${STANDALONE}" >> "${GITHUB_ENV}"
+          echo "BINARY_FILE=${BINARY_FILE}" >> "${GITHUB_ENV}"
           echo "ARCHIVE_FILE=${ARCHIVE_FILE}" >> "${GITHUB_ENV}"
 
       - name: Attest provenance
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-path: |
-            ${{ env.STANDALONE }}
+            ${{ env.BINARY_FILE }}
             ${{ env.ARCHIVE_FILE }}
 
       - name: Upload – binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ env.STANDALONE }}
-          path: ${{ env.STANDALONE }}
+          name: ${{ env.BINARY_FILE }}
+          path: ${{ env.BINARY_FILE }}
           retention-days: 1
 
       - name: Upload – archive
@@ -164,8 +164,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
+          IS_PRERELEASE: ${{ contains(github.ref, '-') }}
         run: |
           gh release create "${TAG_NAME}" \
+            --prerelease="${IS_PRERELEASE}" \
             --title "${TAG_NAME}" \
             --notes-file CHANGELOG.md \
             ./artifacts/*
@@ -178,6 +180,13 @@ jobs:
       contents: read
     needs:
       - release
+    if: ${{ !contains(github.ref, '-') }} # skip prereleases (-rc, -alpha, -beta, ...)
+    env:
+      TAP_REPO: graelo/homebrew-tap
+      FORMULA_NAME: gcode-language-server
+      BOT_NAME: 'graelo-ci-bot[bot]'
+      BOT_USER_ID: '274240725'
+      REPO_URL: ${{ github.server_url }}/${{ github.repository }}
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -187,24 +196,37 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: graelo
           repositories: homebrew-tap
+          permission-contents: write
+          permission-pull-requests: write
 
-      - name: Extract version
-        id: extract-version
+      - name: Set up Homebrew bot
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          echo "tag-name=${GITHUB_REF#refs/tags/}" >> "${GITHUB_OUTPUT}"
+          # Linuxbrew is preinstalled on ubuntu-latest; put it on PATH for later steps.
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "/home/linuxbrew/.linuxbrew/bin" >> "${GITHUB_PATH}"
+
+          # Tap the formula repo so `brew bump-formula-pr` can locate it by name.
+          brew tap "${TAP_REPO}"
+
+          # Configure git to push using the app token, and set the bot identity
+          # so the commit is attributed to ${BOT_NAME}.
+          gh auth setup-git
+          git config --global user.name  "${BOT_NAME}"
+          git config --global user.email "${BOT_USER_ID}+${BOT_NAME}@users.noreply.github.com"
 
       - name: Bump Homebrew formula
-        uses: mislav/bump-homebrew-formula-action@ccf2332299a883f6af50a1d2d41e5df7904dd769 # v4.1
-        if: '!contains(github.ref, ''-'')' # skip prereleases
-        with:
-          formula-name: gcode-language-server
-          homebrew-tap: graelo/homebrew-tap
-          push-to: graelo/homebrew-tap
-          create-pullrequest: true
-          download-url: https://github.com/graelo/gcode-language-server/archive/refs/tags/${{ steps.extract-version.outputs.tag-name }}.tar.gz
-          commit-message: |
-            {{formulaName}} {{version}}
-
-            Created by https://github.com/mislav/bump-homebrew-formula-action
         env:
-          COMMITTER_TOKEN: ${{ steps.app-token.outputs.token }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_ANALYTICS: '1'
+          HOMEBREW_NO_ENV_HINTS: '1'
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          brew bump-formula-pr \
+            --no-browse \
+            --no-fork \
+            --url="${REPO_URL}/archive/refs/tags/${TAG_NAME}.tar.gz" \
+            "${TAP_REPO}/${FORMULA_NAME}"
