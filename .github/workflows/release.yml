@@ -87,8 +87,8 @@ jobs:
           fi
           SRC="target/${TARGET}/release/${BIN}${EXT}"
 
-          STANDALONE="${BIN}-${TARGET}${EXT}"
-          cp "${SRC}" "${STANDALONE}"
+          BINARY_FILE="${BIN}-${TARGET}${EXT}"
+          cp "${SRC}" "${BINARY_FILE}"
 
           PKG_DIR="${BIN}-${TAG}-${TARGET}"
           mkdir "${PKG_DIR}"
@@ -103,21 +103,21 @@ jobs:
             tar -cJf "${ARCHIVE_FILE}" "${PKG_DIR}"
           fi
 
-          echo "STANDALONE=${STANDALONE}" >> "${GITHUB_ENV}"
+          echo "BINARY_FILE=${BINARY_FILE}" >> "${GITHUB_ENV}"
           echo "ARCHIVE_FILE=${ARCHIVE_FILE}" >> "${GITHUB_ENV}"
 
       - name: Attest provenance
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-path: |
-            ${{ env.STANDALONE }}
+            ${{ env.BINARY_FILE }}
             ${{ env.ARCHIVE_FILE }}
 
-      - name: Upload – standalone
+      - name: Upload – binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ env.STANDALONE }}
-          path: ${{ env.STANDALONE }}
+          name: ${{ env.BINARY_FILE }}
+          path: ${{ env.BINARY_FILE }}
           retention-days: 1
 
       - name: Upload – archive
