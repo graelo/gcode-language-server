@@ -38,7 +38,7 @@ jobs:
           toolchain: stable
 
       - name: Install cargo-tarpaulin
-        uses: taiki-e/install-action@6887963ccf37a9ddcd8c5fa4baeb3e1e5fd61fa1 # v2.81.2
+        uses: taiki-e/install-action@7a79fe8c3a13344501c80d99cae481c1c9085912 # v2.81.10
         with:
           tool: cargo-tarpaulin@0.35.4
 
@@ -46,7 +46,7 @@ jobs:
         run: cargo tarpaulin --locked --verbose --timeout 120 --out xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
         with:
           files: cobertura.xml
           fail_ci_if_error: false
