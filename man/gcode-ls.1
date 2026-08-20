@@ -1,0 +1,67 @@
+.TH GCODE-LS 1 "2026-08-20" "gcode-language-server 0.0.2" "User Commands"
+.SH NAME
+gcode-ls \- Language Server Protocol implementation for G-code files
+.SH SYNOPSIS
+.B gcode-ls
+.RI [ OPTIONS ]
+.SH DESCRIPTION
+.B gcode-ls
+runs a Language Server Protocol server for G-code files.
+It reads JSON-RPC messages from standard input and writes responses to standard
+output.
+.PP
+The server provides parsing, validation, completion, hover, and document symbol
+features for G-code editors. It uses the Prusa flavor by default and supports
+other G-code dialects through flavor files.
+.SH OPTIONS
+.TP
+.BI \-\-flavor " FLAVOR"
+Select the G-code flavor to use, such as
+.BR prusa ,
+.BR marlin , or
+.BR klipper .
+.TP
+.BI \-\-flavor-dir " DIRECTORY"
+Search
+.I DIRECTORY
+for custom flavor TOML files.
+.TP
+.BI \-\-log-level " LEVEL"
+Set the log level. Accepted values are
+.BR trace ,
+.BR debug ,
+.BR info ,
+.BR warn , and
+.BR error .
+The default is
+.BR info .
+.TP
+.BR \-h , \-\-help
+Print help information.
+.TP
+.BR \-V , \-\-version
+Print version information.
+.SH FLAVOR SELECTION
+The built-in Prusa flavor is used unless another flavor is selected with
+.BR \-\-flavor .
+The server writes the embedded Prusa flavor to
+.I ~/.gcode-ls/flavors/prusa.gcode-flavor.toml
+when that file does not already exist.
+.SH FILES
+.TP
+.I ~/.gcode-ls/flavors/
+User flavor directory.
+.TP
+.I ~/.gcode-ls/flavors/prusa.gcode-flavor.toml
+The embedded Prusa flavor copied for user access on startup.
+.SH EXIT STATUS
+.TP
+.B 0
+The server exited successfully.
+.TP
+.B 1
+An error occurred while starting or running the server.
+.SH SEE ALSO
+.BR language-server-protocol (7)
+.SH AUTHORS
+graelo <https://github.com/graelo/gcode-language-server>
