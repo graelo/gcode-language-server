@@ -1,13 +1,3 @@
-//! GCode Language Server
-//!
-//! A clean, fast Language Server Protocol implementation for GCode files.
-//!
-//! This library provides:
-//! - GCode parsing and validation
-//! - LSP protocol implementation  
-//! - Flavor-based command definitions
-//! - Configuration management
-
 // New clean modules
 pub mod config;
 pub mod core;
