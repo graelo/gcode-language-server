@@ -4,6 +4,13 @@ version = "0.0.2"
 edition = "2024"
 rust-version = "1.95.0"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
+description = "A Language Server Protocol implementation for G-code files."
+documentation = "https://docs.rs/gcode-language-server"
+homepage = "https://github.com/graelo/gcode-language-server"
+repository = "https://github.com/graelo/gcode-language-server"
+keywords = ["gcode", "language-server", "lsp", "rust"]
+categories = ["development-tools"]
 
 [[bin]]
 name = "gcode-ls"

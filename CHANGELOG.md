@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Add a Makefile as the canonical local verification workflow, including
+  formatting, linting, tests, audits, documentation, manpage, security, and
+  coverage targets
+- Add a `gcode-ls(1)` manpage and manpage linting instructions
+
+### Changed
+
+- Document the Makefile-based workflow in the README and contributor guide
+- Use the repository README as the package documentation instead of duplicating
+  crate-level documentation in `src/lib.rs`, and add complete crates.io/docs.rs
+  package metadata
+
 ## [0.0.2] - 2026-06-02
 
 ### Changed
+
 - CI workflows aligned with playbook conventions (matrix jobs, tooling install)
 - CI release workflow: publish prerelease tags as GitHub pre-releases, switch
   homebrew bump to brew CLI, consistent binary/archive vocabulary
@@ -21,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [0.0.1] - 2025-09-25
 
 ### Added
+
 - LSP server with JSON-RPC over stdin/stdout
 - G-code parser with streaming tokenization (240-360 MiB/s on 20MB files)
 - Flavor system with Prusa, Marlin, Klipper support
@@ -39,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Comprehensive test coverage
 
 ### Architecture
+
 - Clean module separation: parser, flavor, validation, lsp, core
 - Synchronous core with async only at LSP boundary
 - Zero-copy tokenization

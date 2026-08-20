@@ -118,19 +118,19 @@ description = "Home X axis only"
 
 ## Development
 
+The [`Makefile`](Makefile) is the canonical definition of local tasks. Run
+`make help` to list them; use `make check` before pushing and `make check-all`
+before opening a pull request.
+
 ```bash
-# Build
-cargo build
-
-# Test
-cargo test
-
-# Benchmarks
-cargo bench
-
-# Lint
-cargo clippy
+make check       # format, lint, and run the full test suite
+make check-all   # add audits, documentation, and CI security checks
+make fix         # format and apply Clippy fixes
+make coverage    # generate target/llvm-cov/html/index.html
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for focused testing, benchmarks,
+coverage, and manpage maintenance.
 
 ## License
 
