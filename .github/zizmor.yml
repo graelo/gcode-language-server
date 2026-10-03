@@ -1,8 +1,0 @@
-rules:
-  superfluous-actions:
-    ignore:
-      - _cargo-audit.yml
-      - ci-essentials.yml
-      - ci-compatibility-matrix.yml
-      - release.yml
-      - ci-benchmarks.yml
