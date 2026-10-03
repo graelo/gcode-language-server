@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Replace the unmaintained `tower-lsp` 0.20 with the community-maintained
+  `tower-lsp-server` 0.23 fork. The LSP types are now re-exported from
+  `ls-types` instead of `lsp-types` (notably `Uri` replaces `url::Url`), and
+  the `LanguageServer` trait uses native async-in-trait instead of the
+  `#[async_trait]` macro. This is a breaking change for users of the library
+  crate's `lsp` module; the `gcode-ls` binary behavior is unchanged. It also
+  resolves a Clippy 1.99 false positive
+  (`double_must_use` in the `#[async_trait]` macro expansion) that broke CI
+  on stable toolchains
 - Document the Makefile-based workflow in the README and contributor guide
 - Use the repository README as the package documentation instead of duplicating
   crate-level documentation in `src/lib.rs`, and add complete crates.io/docs.rs

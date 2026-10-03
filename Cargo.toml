@@ -43,7 +43,7 @@ tokio = {
   features = ["fs", "io-std", "macros", "rt", "rt-multi-thread", "time"]
 }
 toml = "1.1"
-tower-lsp = "0.20"
+tower-lsp-server = "0.23"
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

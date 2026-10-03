@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::fs;
 use std::path::Path;
 use tokio::io::{stdin, stdout};
-use tower_lsp::{LspService, Server};
+use tower_lsp_server::{LspService, Server};
 
 use crate::Config;
 use crate::flavor::registry::FlavorRegistry;

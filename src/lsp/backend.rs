@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
-use tower_lsp::lsp_types::*;
-use tower_lsp::{Client, LanguageServer};
+use tower_lsp_server::ls_types::*;
+use tower_lsp_server::{Client, LanguageServer};
 
 use crate::Config;
 use crate::flavor::registry::FlavorRegistry;
@@ -16,7 +16,7 @@ use crate::lsp::handlers::{
 pub struct Backend {
     pub client: Client,
     pub flavor_registry: Arc<Mutex<FlavorRegistry>>,
-    pub documents: Arc<Mutex<HashMap<Url, DocumentState>>>,
+    pub documents: Arc<Mutex<HashMap<Uri, DocumentState>>>,
     pub config: Config,
 }
 
@@ -33,12 +33,11 @@ impl Backend {
     }
 }
 
-#[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(
         &self,
         _: InitializeParams,
-    ) -> tower_lsp::jsonrpc::Result<InitializeResult> {
+    ) -> tower_lsp_server::jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
@@ -69,25 +68,25 @@ impl LanguageServer for Backend {
             .await;
     }
 
-    async fn shutdown(&self) -> tower_lsp::jsonrpc::Result<()> {
+    async fn shutdown(&self) -> tower_lsp_server::jsonrpc::Result<()> {
         Ok(())
     }
 
-    async fn hover(&self, params: HoverParams) -> tower_lsp::jsonrpc::Result<Option<Hover>> {
+    async fn hover(&self, params: HoverParams) -> tower_lsp_server::jsonrpc::Result<Option<Hover>> {
         self.handle_hover(params).await
     }
 
     async fn completion(
         &self,
         params: CompletionParams,
-    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+    ) -> tower_lsp_server::jsonrpc::Result<Option<CompletionResponse>> {
         self.handle_completion(params).await
     }
 
     async fn document_symbol(
         &self,
         params: DocumentSymbolParams,
-    ) -> tower_lsp::jsonrpc::Result<Option<DocumentSymbolResponse>> {
+    ) -> tower_lsp_server::jsonrpc::Result<Option<DocumentSymbolResponse>> {
         self.handle_document_symbol(params).await
     }
 

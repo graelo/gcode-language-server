@@ -1,5 +1,7 @@
-use tower_lsp::jsonrpc::Result as LspResult;
-use tower_lsp::lsp_types::*;
+use std::future::Future;
+
+use tower_lsp_server::jsonrpc::Result as LspResult;
+use tower_lsp_server::ls_types::*;
 
 use crate::flavor::schema::ParameterType;
 use crate::lsp::backend::Backend;
@@ -7,41 +9,39 @@ use crate::lsp::document::DocumentState;
 use crate::validation::engine::validate_document;
 
 /// Trait for handling hover requests
-#[tower_lsp::async_trait]
 pub trait HandleHover {
-    async fn handle_hover(&self, params: HoverParams) -> LspResult<Option<Hover>>;
+    fn handle_hover(
+        &self,
+        params: HoverParams,
+    ) -> impl Future<Output = LspResult<Option<Hover>>> + Send;
 }
 
 /// Trait for handling completion requests
-#[tower_lsp::async_trait]
 pub trait HandleCompletion {
-    async fn handle_completion(
+    fn handle_completion(
         &self,
         params: CompletionParams,
-    ) -> LspResult<Option<CompletionResponse>>;
+    ) -> impl Future<Output = LspResult<Option<CompletionResponse>>> + Send;
 }
 
 /// Trait for handling document symbols
-#[tower_lsp::async_trait]
 pub trait HandleDocumentSymbol {
-    async fn handle_document_symbol(
+    fn handle_document_symbol(
         &self,
         params: DocumentSymbolParams,
-    ) -> LspResult<Option<DocumentSymbolResponse>>;
+    ) -> impl Future<Output = LspResult<Option<DocumentSymbolResponse>>> + Send;
 }
 
 /// Trait for handling diagnostics
-#[tower_lsp::async_trait]
 pub trait HandleDiagnostics {
-    async fn create_document_state(&self, content: String) -> DocumentState;
-    async fn publish_diagnostics(&self, uri: Url);
+    fn create_document_state(&self, content: String) -> impl Future<Output = DocumentState> + Send;
+    fn publish_diagnostics(&self, uri: Uri) -> impl Future<Output = ()> + Send;
     fn create_lsp_diagnostic(
         &self,
         validation_diagnostic: crate::validation::engine::Diagnostic,
-    ) -> tower_lsp::lsp_types::Diagnostic;
+    ) -> Diagnostic;
 }
 
-#[tower_lsp::async_trait]
 impl HandleHover for Backend {
     async fn handle_hover(&self, params: HoverParams) -> LspResult<Option<Hover>> {
         let tdpp = params.text_document_position_params;
@@ -131,7 +131,6 @@ impl HandleHover for Backend {
     }
 }
 
-#[tower_lsp::async_trait]
 impl HandleCompletion for Backend {
     async fn handle_completion(
         &self,
@@ -268,7 +267,6 @@ impl HandleCompletion for Backend {
     }
 }
 
-#[tower_lsp::async_trait]
 impl HandleDiagnostics for Backend {
     /// Create a new document state, detecting flavor and caching commands
     async fn create_document_state(&self, content: String) -> DocumentState {
@@ -298,7 +296,7 @@ impl HandleDiagnostics for Backend {
     }
 
     /// Publish diagnostics for a document
-    async fn publish_diagnostics(&self, uri: Url) {
+    async fn publish_diagnostics(&self, uri: Uri) {
         let docs = self.documents.lock().await;
         let doc_state = match docs.get(&uri) {
             Some(state) => state,
@@ -326,7 +324,7 @@ impl HandleDiagnostics for Backend {
     fn create_lsp_diagnostic(
         &self,
         validation_diagnostic: crate::validation::engine::Diagnostic,
-    ) -> tower_lsp::lsp_types::Diagnostic {
+    ) -> Diagnostic {
         use crate::validation::engine::Severity;
 
         let severity = match validation_diagnostic.severity {
@@ -335,7 +333,7 @@ impl HandleDiagnostics for Backend {
             Severity::Info => DiagnosticSeverity::INFORMATION,
         };
 
-        tower_lsp::lsp_types::Diagnostic::new(
+        Diagnostic::new(
             Range::new(
                 Position::new((validation_diagnostic.line - 1) as u32, 0),
                 Position::new((validation_diagnostic.line - 1) as u32, 100), // Arbitrary end position
@@ -350,7 +348,6 @@ impl HandleDiagnostics for Backend {
     }
 }
 
-#[tower_lsp::async_trait]
 impl HandleDocumentSymbol for Backend {
     async fn handle_document_symbol(
         &self,
