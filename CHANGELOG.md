@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Use the repository README as the package documentation instead of duplicating
   crate-level documentation in `src/lib.rs`, and add complete crates.io/docs.rs
   package metadata
+- Align CI with github-actions-playbook v1.9: install Rust with
+  actions-rust-lang/setup-rust-toolchain pinned to the v2.0.0 tag instead of
+  the untagged dtolnay/rust-toolchain, rename targets to the singular target
+  input, keep the action cache off, deny warnings in cargo builds, and drop
+  the now-dead zizmor superfluous-actions config
+- Remove the unused `env_logger` and `notify` dependencies, flagged by the
+  cargo unused-dependencies lint on Rust 1.101 beta and denied by the
+  build-warnings default of the new setup-rust-toolchain action
 
 ## [0.0.2] - 2026-06-02
 
@@ -40,11 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - CI audit: guard cargo-pants install with command -v fallback
 - Pin github-actions-playbook to v1.1
 - Scope GitHub App token permissions explicitly in renovate workflow
-- Align CI with github-actions-playbook v1.9: install Rust with
-  actions-rust-lang/setup-rust-toolchain pinned to the v2.0.0 tag instead of
-  the untagged dtolnay/rust-toolchain, rename targets to the singular target
-  input, keep the action cache off, deny warnings in cargo builds, and drop
-  the now-dead zizmor superfluous-actions config
 - Dependency updates (minor and patch)
 
 ## [0.0.1] - 2025-09-25
