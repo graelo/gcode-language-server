@@ -34,9 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the untagged dtolnay/rust-toolchain, rename targets to the singular target
   input, keep the action cache off, deny warnings in cargo builds, and drop
   the now-dead zizmor superfluous-actions config
-- Remove the unused `env_logger` and `notify` dependencies, flagged by the
-  cargo unused-dependencies lint on Rust 1.101 beta and denied by the
-  build-warnings default of the new setup-rust-toolchain action
+- Remove the unused `env_logger`, `notify`, and `regex` dependencies, flagged
+  by the cargo unused-dependencies lint on Rust 1.101 beta and 1.102 nightly
+  and denied by the build-warnings default of the new setup-rust-toolchain
+  action
 
 ## [0.0.2] - 2026-06-02
 

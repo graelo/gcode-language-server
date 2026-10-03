@@ -438,7 +438,6 @@ dependencies = [
  "criterion",
  "dirs",
  "log",
- "regex",
  "serde",
  "serde_json",
  "tempfile",
