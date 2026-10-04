@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Add a Makefile as the canonical local verification workflow, including
   formatting, linting, tests, audits, documentation, manpage, security, and
   coverage targets
+- Deny cargo build warnings in local builds via `.cargo/config.toml`, matching
+  the build-warnings behavior of the CI setup-rust-toolchain action
 - Add a `gcode-ls(1)` manpage and manpage linting instructions
 
 ### Changed
